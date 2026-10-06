@@ -1,6 +1,6 @@
 name: Clean up releases after history rewrite
 
-# One-off: after rewriting the history, the old releases still point to commits that are no
+# One-off (remove after it ran): after rewriting the history, the old releases still point to commits that are no
 # longer on main. Delete them (with their tags) and publish the current version on the new history.
 on:
   push:
