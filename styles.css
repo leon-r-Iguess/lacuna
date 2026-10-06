@@ -1,0 +1,94 @@
+.lacuna-button {
+  font-size: 1.05em;
+  padding: 0.6em 1.4em;
+  margin: 0.5em 0;
+  cursor: pointer;
+}
+.lacuna-source {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  word-break: break-all;
+}
+
+/* ---------- Exam readiness ---------- */
+
+/* Static text version: only visible where the plugin is not installed */
+.lacuna-static,
+.skript-check-statisch {
+  display: none;
+}
+
+.lacuna-readiness {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: 0.9em 1.1em;
+  margin: 0.4em 0 1em;
+  background: var(--background-secondary);
+}
+.lacuna-readiness-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 600;
+  margin-bottom: 0.4em;
+}
+.lacuna-readiness-number {
+  font-size: 1.6em;
+  font-variant-numeric: tabular-nums;
+}
+.lacuna-readiness-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--background-modifier-border);
+  overflow: visible;
+  margin-bottom: 0.6em;
+}
+.lacuna-readiness-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+.lacuna-readiness-fill.lacuna-weak { background: var(--color-red); }
+.lacuna-readiness-fill.lacuna-medium { background: var(--color-yellow); }
+.lacuna-readiness-fill.lacuna-good { background: var(--color-green); }
+.lacuna-readiness-forecast {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 18px;
+  background: var(--text-muted);
+}
+.lacuna-readiness-info {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  margin: 0.2em 0;
+}
+.lacuna-readiness-hint {
+  font-size: var(--font-ui-small);
+  color: var(--text-warning);
+  margin: 0.3em 0;
+}
+.lacuna-readiness-sub {
+  font-weight: 600;
+  margin-top: 0.8em;
+}
+.lacuna-levers {
+  margin: 0.3em 0 0.6em;
+}
+.lacuna-levers li {
+  margin: 0.25em 0;
+}
+.lacuna-small {
+  font-size: var(--font-ui-smaller);
+  padding: 0.1em 0.6em;
+  margin-left: 0.4em;
+  height: auto;
+}
+.lacuna-readiness-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  align-items: center;
+  margin-top: 0.6em;
+}

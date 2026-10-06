@@ -1,0 +1,26 @@
+{
+  "anbieter": "gemini",
+  "apiKey": "sk-ant-FAKE-for-tests",
+  "geminiKey": "FAKE-gemini-for-tests",
+  "openaiKey": "",
+  "geminiModell": "gemini-3.8-flash",
+  "openaiModell": "gpt-6.1-sol",
+  "workspaceId": "",
+  "modell": "claude-sonnet-5-5",
+  "standardAnzahl": 10,
+  "fragetypen": "offen",
+  "niveau": "klausur",
+  "stilvorlagen": {
+    "Uni/Netze": "Uni/Netze/Altklausur.pdf"
+  },
+  "testOrdner": "Tests",
+  "lernstandName": "Lernstand",
+  "themenName": "Themen",
+  "zielErinnerung": 0.85,
+  "reifeDeckel": 90,
+  "sicherheitAbfragen": true,
+  "statusleiste": false,
+  "ohneThemenliste": [
+    "Uni/Mathe"
+  ]
+}

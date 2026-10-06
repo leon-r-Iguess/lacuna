@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+dist/
+main.js
+*.zip
+
+# Never commit plugin settings: data.json contains API keys
+data.json
+.obsidian/
+
+# Secrets and local files
+.env
+.env.*
+*.pem
+*.key
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+coverage/
