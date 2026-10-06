@@ -115,6 +115,33 @@ function normName(s: string): string {
 	return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
+/**
+ * Map a quiz topic to a topic-list name when the names are not identical: all words of one must
+ * appear in the other ("VLAN tagging" → "VLAN"). Whole words only, so "Zip compression" never
+ * matches "IP". If several list topics fit equally well the topic stays unassigned.
+ */
+export function lenientMatch(norm: string, byNorm: Map<string, string>): string | null {
+	const words = new Set(norm.split(" ").filter(Boolean));
+	if (!words.size) return null;
+	let best: string | null = null;
+	let bestScore = 0;
+	let tie = false;
+	for (const [k, v] of byNorm) {
+		const kw = k.split(" ").filter(Boolean);
+		if (!kw.length) continue;
+		const kSet = new Set(kw);
+		const fits = kw.every((w) => words.has(w)) || [...words].every((w) => kSet.has(w));
+		if (!fits) continue;
+		const score = kw.filter((w) => words.has(w)).length;
+		if (score > bestScore) {
+			best = v;
+			bestScore = score;
+			tie = false;
+		} else if (score === bestScore) tie = true;
+	}
+	return tie ? null : best;
+}
+
 export function levelOf(q: QuizData): Level {
 	return q.styleTemplate ? "exam" : (q.level ?? "normal");
 }
@@ -247,9 +274,7 @@ export function computeReadiness(quizzes: QuizData[], o: ReadinessOptions): Subj
 			const n = normName(raw);
 			const direct = byNorm.get(n) ?? aliases.get(n);
 			if (direct) return byNorm.get(normName(direct)) ?? null;
-			// lenient: does one name contain the other?
-			for (const [k, v] of byNorm) if (k && n && (k.includes(n) || n.includes(k))) return v;
-			return null;
+			return lenientMatch(n, byNorm);
 		};
 	} else {
 		topicOf = (raw) => raw.trim() || t().defaultTopic;
@@ -278,7 +303,10 @@ export function computeReadiness(quizzes: QuizData[], o: ReadinessOptions): Subj
 		const files = o.files ?? [];
 		const sources = new Set(evaluated.map((q) => q.source));
 		const total = files.reduce((a, d) => a + d.weight, 0);
-		const covered = files.filter((d) => sources.has(d.path) || [...sources].some((s) => s && d.path.startsWith(s + "/"))).reduce((a, d) => a + d.weight, 0);
+		const isRoot = (s: string) => s === "" || s === "/";
+		const covered = files
+			.filter((d) => sources.has(d.path) || [...sources].some((s) => isRoot(s) || d.path.startsWith(s + "/")))
+			.reduce((a, d) => a + d.weight, 0);
 		coverage = total ? covered / total : tested.length ? 1 : 0;
 		readiness = mean((x) => x.readiness, tested, sumWT) * coverage;
 		if (o.exam) atExam = mean((x) => x.readinessAtExam ?? 0, tested, sumWT) * coverage;

@@ -29,7 +29,7 @@ Lacuna ist ein Plugin für [Obsidian](https://obsidian.md). Es macht aus deinen 
 
 ## So funktioniert's
 
-1. Rechtsklick auf Notiz, PDF, Bild oder Ordner → **Lacuna: Test erstellen**.
+1. Rechtsklick auf Notiz, PDF oder Bild → **Lacuna: Test erstellen** (oder auf einen Ordner → **Lacuna: Test aus Ordner erstellen**).
 2. In der Notiz antworten: bei Multiple Choice ankreuzen, bei offenen Fragen unter **Antwort:** schreiben.
 3. **Auswerten** klicken. Die Test-Notiz wird zum Ergebnis mit Score, Fehleranalyse und Nachfragen.
 4. Rechtsklick auf den Fach-Ordner → **Lacuna: Lernstand aktualisieren** für Fehlermuster über alle Tests, die Klausurreife und die nächsten Schritte.
@@ -75,11 +75,18 @@ Pro Thema gilt: **Reife = Beherrschung × Erinnerung × Beleg**. Der Beleg errei
 
 Die Selbsteinschätzung fließt bewusst **nicht** ein: Sie wird nur als Kalibrierung angezeigt.
 
-## Datenschutz
+## Datenschutz und Hinweise
 
-- Deine Unterlagen gehen nur an den KI-Anbieter, den du wählst, und nur, wenn du einen Test erstellst, auswertest oder eine Themenliste baust. Sonst wird nichts gesendet, es gibt keine Telemetrie.
+- **Netzwerk:** Lacuna schickt Inhalte an den KI-Anbieter, den du wählst (Anthropic, Google oder OpenAI), und nur wenn du
+  - einen Test erstellst (die gewählte Notiz, PDF-Seiten, Bilder oder den Ordner),
+  - einen Test auswertest (Fragen, Musterlösungen und deine Antworten),
+  - den Lernstand von Hand aktualisierst (deine bisherigen Fehler, um Fehlermuster zu finden),
+  - eine Themenliste erstellst oder ergänzt (die Unterlagen des Fach-Ordners, nach Bestätigung einer Kostenschätzung).
+
+  Sonst wird nichts gesendet, es gibt keine Telemetrie.
+- **Konto / Kosten:** Du brauchst einen API-Key von einem dieser Anbieter. Claude und ChatGPT rechnen nach Nutzung ab, Gemini hat ein kostenloses Kontingent. Lacuna selbst ist kostenlos.
 - API-Keys liegen lokal in `.obsidian/plugins/lacuna/data.json`. Diesen Ordner nie weitergeben – zum Teilen die Release-Dateien nehmen.
-- Bevor eine Themenliste erstellt wird, zeigt Lacuna eine Kostenschätzung und fragt nach.
+- Lacuna schreibt nur in Notizen, die es selbst angelegt hat (erkennbar an `lacuna:` im Frontmatter). Heißt eine deiner Notizen schon wie die Lernstand-Notiz oder die Themenliste, bleibt sie unverändert. Eigene Eigenschaften (Tags, Aliase …) in Test- und Lernstand-Notizen bleiben erhalten.
 
 ## Umstieg von Skript-Check
 

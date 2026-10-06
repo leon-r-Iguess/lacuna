@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2
+
+Fixes from a full code review, mainly to make sure Lacuna never destroys anything you wrote:
+
+- A note of yours that happens to be called like the progress note or the topic list (e.g. `Progress.md`, `Topics.md`) is never overwritten anymore; Lacuna shows a notice instead.
+- Evaluating no longer overwrites answers you changed while the AI was grading, and keeps your own frontmatter properties (tags, aliases, …).
+- Extending the topic list only touches the table and the sources block – your text, extra columns and links like `[[Note|Alias]]` in cells stay.
+- Topics are matched on whole words ("Zip compression" no longer counts as "IP"); ambiguous matches stay unassigned.
+- Folders named like the quiz folder (e.g. your own "Tests" folder) are no longer skipped as material.
+- Startup no longer fails on an unknown language value; settings are saved on first start so folder names don't change with Obsidian's language.
+- Windows line endings and empty frontmatter are handled; multiple choice with more than six options; image names containing `%`.
+- README: full disclosure of network use and the need for an API key.
+
 ## 0.5.1
 
 - Fix: Lacuna failed to load while Skript-Check was still enabled (both registered the `skript-check` code block). Lacuna now leaves those blocks to Skript-Check until it is disabled.

@@ -1,7 +1,7 @@
 {
   "id": "lacuna",
   "name": "Lacuna",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "minAppVersion": "1.5.0",
   "description": "Finds the gaps in your knowledge: AI quizzes from your notes, PDFs and images, with scoring, error analysis and exam readiness. Works with Claude, Gemini or ChatGPT (your own API key).",
   "author": "Leon",

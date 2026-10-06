@@ -3,7 +3,7 @@
 ## How Lacuna handles your data
 
 - API keys are stored locally in `.obsidian/plugins/lacuna/data.json` and are only sent to the provider they belong to.
-- Note, PDF and image content is sent only to the AI provider you selected, only when you create or evaluate a quiz or build a topic list.
+- Note, PDF and image content is sent only to the AI provider you selected, only when you create or evaluate a quiz, update a progress note manually (error-pattern analysis) or build a topic list.
 - There is no telemetry and no server of our own.
 
 ## Reporting a vulnerability

@@ -29,7 +29,7 @@ Lacuna is an [Obsidian](https://obsidian.md) plugin that turns your lecture note
 
 ## How it works
 
-1. Right-click a note, PDF, image or folder → **Lacuna: Create quiz**.
+1. Right-click a note, PDF or image → **Lacuna: Create quiz** (or a folder → **Lacuna: Create quiz from folder**).
 2. Answer in the note: check boxes for multiple choice, write below **Answer:** for open questions.
 3. Click **Evaluate**. The quiz note turns into the result with score, error analysis and follow-up questions.
 4. Right-click the subject folder → **Lacuna: Update progress** to see patterns across quizzes, the exam readiness and what to do next.
@@ -85,11 +85,18 @@ Per topic: **readiness = mastery × recall × evidence**. Evidence reaches 100 %
 
 The self-rated confidence is deliberately **not** part of this: it is shown as calibration only.
 
-## Privacy
+## Privacy and disclosures
 
-- Your material is sent to the AI provider you choose, only when you create or evaluate a quiz or build a topic list. Nothing is sent anywhere else, and there is no telemetry.
+- **Network use:** Lacuna sends content to the AI provider you choose (Anthropic, Google or OpenAI), and only when you
+  - create a quiz (the selected note, PDF pages, images or folder),
+  - evaluate a quiz (the questions, model answers and your answers),
+  - update the progress note manually (your past mistakes, to find error patterns),
+  - build or extend a topic list (the material of the subject folder, after you confirm a cost estimate).
+
+  Nothing is sent anywhere else, and there is no telemetry.
+- **Account / payment:** you need an API key from one of these providers. Claude and ChatGPT bill per use; Gemini has a free tier. Lacuna itself is free.
 - API keys are stored locally in `.obsidian/plugins/lacuna/data.json`. Never share that folder – share the release files instead.
-- Before a topic list is built, Lacuna shows a cost estimate and asks for confirmation.
+- Lacuna only writes notes it created itself (recognized by `lacuna:` in the frontmatter). If one of your notes already uses the name of the progress note or topic list, it is left untouched. Your own frontmatter properties (tags, aliases, …) on quiz and progress notes are kept.
 
 ## Coming from Skript-Check
 

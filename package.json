@@ -1,6 +1,6 @@
 {
   "name": "lacuna",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Obsidian plugin that finds the gaps in your knowledge: AI-generated quizzes from your notes, PDFs and images, with scoring, error analysis and exam readiness.",
   "private": true,
   "scripts": {

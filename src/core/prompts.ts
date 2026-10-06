@@ -122,8 +122,8 @@ export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mix
 		let correct: number | null = null;
 		if (type === "mc") {
 			const r = Number(f.correct ?? f.richtig);
+			options = options.slice(0, 6); // A–F; cut first so the correct index is checked against what is shown
 			if (options.length >= 2 && Number.isInteger(r) && r >= 0 && r < options.length) {
-				options = options.slice(0, 6);
 				correct = r;
 			} else {
 				type = "open"; // unusable MC: ask it as an open question instead

@@ -25,8 +25,12 @@ import {
 	LEGACY_KEY,
 	PLUGIN_KEY,
 	frontmatterValue,
+	PROGRESS_KEYS,
+	QUIZ_KEYS,
 	isEvaluatedNote,
+	keepUserFrontmatter,
 	normalizeAction,
+	noteKind,
 	parseAnswers,
 	renderEvaluated,
 	renderQuiz,
@@ -44,6 +48,7 @@ import {
 	normalizeTopics,
 	parseTopics,
 	renderTopics,
+	updateTopicsMarkdown,
 } from "./core/topics";
 import { Level, Question, QuestionTypes, QuizData } from "./core/types";
 import { localDate, localStamp, newId, safeFileName } from "./core/util";
@@ -442,9 +447,9 @@ export default class LacunaPlugin extends Plugin {
 		}).open();
 	}
 
+	/** Material of a folder: everything except notes Lacuna wrote itself (recognized by frontmatter) and the past exam. */
 	private folderSources(o: TFolder, styleTemplate = ""): TFile[] {
-		const quizFolder = "/" + this.settings.quizFolder + "/";
-		return folderFiles(o, (f) => ("/" + f.path).includes(quizFolder) || f.path === styleTemplate || this.isPluginNote(f));
+		return folderFiles(o, (f) => f.path === styleTemplate || this.isPluginNote(f));
 	}
 
 	async openFolderDialog(o: TFolder, preset: Partial<CreateChoice> = {}) {
@@ -456,7 +461,7 @@ export default class LacunaPlugin extends Plugin {
 		}
 		new CreateDialog(this.app, {
 			title: t().dialog.folderTitle,
-			description: t().dialog.folder(o.path || "Vault", files.length),
+			description: t().dialog.folder(o.path && o.path !== "/" ? o.path : t().vault, files.length),
 			pageCount: null,
 			choice: { ...this.defaultChoice(), count: Math.max(this.settings.defaultCount, 12), styleTemplate: this.settings.styleTemplates[o.path] ?? "", ...preset },
 			pastExams: findPastExams(this.app, o),
@@ -592,7 +597,7 @@ export default class LacunaPlugin extends Plugin {
 				source: o.path,
 				pages: "",
 				targetFolder: this.quizFolderOf(o),
-				fileName: (title, now) => t().files.folderQuiz(safeFileName(o.name || "Vault"), safeFileName(title), localStamp(now)),
+				fileName: (title, now) => t().files.folderQuiz(safeFileName(o.name || t().vault), safeFileName(title), localStamp(now)),
 				subject: o,
 			});
 		});
@@ -654,8 +659,22 @@ export default class LacunaPlugin extends Plugin {
 				} catch (err) {
 					console.warn("[Lacuna] readiness", err);
 				}
-				await this.app.vault.modify(f, renderEvaluated(next, answers, result, line));
+				// Write atomically. If the learner changed answers while the AI was grading, keep their
+				// note untouched instead of overwriting it with a result for the old answers.
+				const rendered = renderEvaluated(next, answers, result, line);
+				let changed = false;
+				await this.app.vault.process(f, (current) => {
+					if (current !== md && (isEvaluatedNote(current) || JSON.stringify(parseAnswers(current, q.questions)) !== JSON.stringify(answers))) {
+						changed = true;
+						return current;
+					}
+					return keepUserFrontmatter(current, rendered, QUIZ_KEYS);
+				});
 				status.hide();
+				if (changed) {
+					new Notice(t().notices.changedDuringEvaluation, 10000);
+					return;
+				}
 				new Notice(t().notices.result(result.percent, result.points, result.max) + (line ? `\n${line}` : ""), 6000);
 				this.updateStatus();
 				// Keep the progress note up to date in the background (no AI patterns, they cost extra)
@@ -766,7 +785,7 @@ export default class LacunaPlugin extends Plugin {
 		});
 		return {
 			subject,
-			name: subject.isRoot() ? "Vault" : subject.name,
+			name: subject.isRoot() ? t().vault : subject.name,
 			r,
 			list,
 			newFiles: list ? newSources(list, sources) : [],
@@ -785,7 +804,7 @@ export default class LacunaPlugin extends Plugin {
 		const found = await this.findTopics(o);
 		const subject = found?.folder ?? o;
 		const old = (await this.examOf(subject)) ?? "";
-		const value = await this.askDate(t().dialog.examDateTitle(subject.isRoot() ? "Vault" : subject.name), old);
+		const value = await this.askDate(t().dialog.examDateTitle(subject.isRoot() ? t().vault : subject.name), old);
 		if (value === null || value === old) return;
 		if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
 			new Notice(t().notices.dateFormat);
@@ -795,7 +814,9 @@ export default class LacunaPlugin extends Plugin {
 		if (!(this.app.vault.getAbstractFileByPath(path) instanceof TFile)) await this.progress(subject, false, true);
 		const f = this.app.vault.getAbstractFileByPath(path);
 		if (!(f instanceof TFile)) return;
-		let md = setFrontmatterValue(await this.app.vault.read(f), "klausur", null);
+		const current = await this.app.vault.read(f);
+		if (noteKind(current) !== "progress") return; // a note of the user's with that name: progress() already warned
+		let md = setFrontmatterValue(current, "klausur", null);
 		md = setFrontmatterValue(md, "exam", value || null);
 		await this.app.vault.modify(f, md);
 		await this.progress(subject, false, true);
@@ -837,7 +858,14 @@ export default class LacunaPlugin extends Plugin {
 			const quizzes = await this.quizzesIn(o);
 			const path = this.progressPath(o);
 			const existing = this.app.vault.getAbstractFileByPath(path);
-			if (!quizzes.some((q) => q.result) && !force && !(existing instanceof TFile)) {
+			const oldMd = existing instanceof TFile ? await this.app.vault.read(existing) : null;
+			if (oldMd !== null && noteKind(oldMd) !== "progress") {
+				// The name is taken by one of the learner's own notes: never overwrite it
+				if (manual || force) new Notice(t().notices.nameTaken(path), 10000);
+				else console.warn(`[Lacuna] ${path} is not a Lacuna progress note, not updating it`);
+				return;
+			}
+			if (!quizzes.some((q) => q.result) && !force && oldMd === null) {
 				if (manual) new Notice(t().notices.noEvaluated(o.name));
 				return;
 			}
@@ -869,13 +897,13 @@ export default class LacunaPlugin extends Plugin {
 					);
 					patterns = Array.isArray(r.data?.patterns) ? r.data.patterns : null;
 					recommendation = String(r.data?.recommendation ?? "");
-				} else if (existing instanceof TFile) {
+				} else if (oldMd !== null) {
 					// Without a new analysis: keep the previous patterns
-					const old = readPatterns(await this.app.vault.read(existing));
+					const old = readPatterns(oldMd);
 					if (old) ({ patterns, recommendation } = old);
 				}
-				const md = renderProgress(o.isRoot() ? "Vault" : o.name, d, patterns, recommendation, new Date(), { readiness, exam, cap: this.settings.readinessCap });
-				if (existing instanceof TFile) await this.app.vault.modify(existing, md);
+				const md = renderProgress(o.isRoot() ? t().vault : o.name, d, patterns, recommendation, new Date(), { readiness, exam, cap: this.settings.readinessCap });
+				if (existing instanceof TFile) await this.app.vault.process(existing, (current) => keepUserFrontmatter(current, md, PROGRESS_KEYS));
 				else await this.app.vault.create(path, md);
 				status?.hide();
 				this.statusCache.clear();
@@ -947,7 +975,13 @@ export default class LacunaPlugin extends Plugin {
 		const found = await this.findTopics(o);
 		const subject = found?.folder ?? o;
 		const list = found?.list ?? null;
-		const name = subject.isRoot() ? "Vault" : subject.name;
+		const name = subject.isRoot() ? t().vault : subject.name;
+		const target = this.app.vault.getAbstractFileByPath(this.topicsPath(subject));
+		if (!list && target instanceof TFile) {
+			// A note with that name exists but is not a topic list: never overwrite it
+			new Notice(t().notices.nameTaken(target.path), 10000);
+			return;
+		}
 		const all = this.folderSources(subject);
 		const toRead = list ? all.filter((f) => newSources(list, [f.path]).length) : all;
 		if (!all.length) {
@@ -1043,10 +1077,11 @@ export default class LacunaPlugin extends Plugin {
 				const today = localDate(new Date());
 				const next = list ? extendTopics(list, topics, b.files, today) : { subject: name, topics, sources: [...b.files].sort(), updated: today };
 				const path = this.topicsPath(subject);
-				const md = renderTopics(next);
 				const existingFile = this.app.vault.getAbstractFileByPath(path);
-				if (existingFile instanceof TFile) await this.app.vault.modify(existingFile, md);
-				else await this.app.vault.create(path, md);
+				if (existingFile instanceof TFile) {
+					// Only the table and the sources block change; the learner's edits around them stay
+					await this.app.vault.process(existingFile, (current) => (noteKind(current) === "topics" ? updateTopicsMarkdown(current, next) : current));
+				} else await this.app.vault.create(path, renderTopics(next));
 				status.hide();
 				const added = list ? next.topics.length - list.topics.length : next.topics.length;
 				new Notice(s.done(added, !!list, cost ? costText(cost) : ""), 8000);
@@ -1063,6 +1098,7 @@ export default class LacunaPlugin extends Plugin {
 
 	async loadSettings() {
 		let data = await this.loadData();
+		const loaded = !!data;
 		let imported = false;
 		if (!data) {
 			// First start: take over settings from Skript-Check (the German predecessor), if installed
@@ -1074,10 +1110,8 @@ export default class LacunaPlugin extends Plugin {
 		this.settings = Object.assign({}, DEFAULTS, languageDefaults, data ?? {});
 		this.settings.styleTemplates = { ...(this.settings.styleTemplates ?? {}) };
 		this.settings.noTopicList = [...(this.settings.noTopicList ?? [])];
-		if (imported) {
-			await this.saveSettings();
-			new Notice(t().notices.importedLegacy, 8000);
-		}
+		if (!loaded) await this.saveSettings(); // fix the language-dependent folder names right away
+		if (imported) new Notice(t().notices.importedLegacy, 8000);
 	}
 
 	private async legacySettings(): Promise<Record<string, unknown> | null> {

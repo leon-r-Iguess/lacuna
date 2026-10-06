@@ -73,7 +73,12 @@ export function imageEmbeds(md: string): string[] {
 	let m: RegExpExecArray | null;
 	while ((m = re1.exec(md))) out.push(m[1].trim());
 	while ((m = re2.exec(md))) {
-		const p = decodeURIComponent(m[1]);
+		let p = m[1];
+		try {
+			p = decodeURIComponent(p);
+		} catch {
+			/* not URL-encoded, e.g. "result_100%.png" */
+		}
 		if (!/^https?:/i.test(p)) out.push(p);
 	}
 	return [...new Set(out)];

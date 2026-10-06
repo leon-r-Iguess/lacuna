@@ -112,8 +112,9 @@ export function renderQuiz(q: QuizData, opt: RenderOptions = {}): string {
 
 /** Body without frontmatter. */
 export function withoutFrontmatter(md: string): string {
-	const m = md.match(/^---\n[\s\S]*?\n---\n?/);
-	return m ? md.slice(m[0].length) : md;
+	const text = md.replace(/\r\n/g, "\n");
+	const m = text.match(/^---\n(?:[\s\S]*?\n)?---(?:\n|$)/);
+	return m ? text.slice(m[0].length) : text;
 }
 
 const ANSWER_LABEL = /^\*\*(?:Answer|Antwort):\*\*/m;
@@ -275,11 +276,23 @@ export function renderEvaluated(q: QuizData, answers: Answer[], r: Result, readi
 	return [fm, head, questions, ...(followUps ? [followUps] : []), ...(info ? [info] : []), dataBlock({ ...q, result: r, answers })].join("\n\n") + "\n";
 }
 
+/** Frontmatter block: "---" line, optional content, "---" line. Works with CRLF and empty frontmatter. */
+const FRONTMATTER = /^---\n(?:([\s\S]*?)\n)?---(?:\n|$)/;
+
+function lf(md: string): string {
+	return md.replace(/\r\n/g, "\n");
+}
+
+/** Raw frontmatter lines (without the --- delimiters), or null if the note has none. */
+export function frontmatterLines(md: string): string[] | null {
+	const m = lf(md).match(FRONTMATTER);
+	if (!m) return null;
+	return m[1] ? m[1].split("\n") : [];
+}
+
 /** Read a scalar frontmatter value (simple, scalar values only). */
 export function frontmatterValue(md: string, key: string): string | null {
-	const m = md.match(/^---\n([\s\S]*?)\n---/);
-	if (!m) return null;
-	const line = m[1].split("\n").find((l) => l.startsWith(key + ":"));
+	const line = (frontmatterLines(md) ?? []).find((l) => l.startsWith(key + ":"));
 	if (!line) return null;
 	return line
 		.slice(key.length + 1)
@@ -293,16 +306,64 @@ export function isEvaluatedNote(md: string): boolean {
 	return s === "evaluated" || s === "ausgewertet";
 }
 
+/** Which kind of Lacuna (or Skript-Check) note this is, from its frontmatter; null for the user's own notes. */
+export function noteKind(md: string): "quiz" | "progress" | "topics" | null {
+	const a = frontmatterValue(md, PLUGIN_KEY);
+	if (a === "quiz" || a === "progress" || a === "topics") return a;
+	const legacy: Record<string, "quiz" | "progress" | "topics"> = { test: "quiz", lernstand: "progress", themen: "topics" };
+	return legacy[frontmatterValue(md, LEGACY_KEY) ?? ""] ?? null;
+}
+
 /** Set a scalar frontmatter value (or remove it with null). Creates frontmatter if needed. */
 export function setFrontmatterValue(md: string, key: string, value: string | null): string {
-	const m = md.match(/^---\n([\s\S]*?)\n---/);
+	const text = lf(md);
+	const m = text.match(FRONTMATTER);
 	const line = value === null ? null : `${key}: ${value}`;
-	if (!m) return line ? `---\n${line}\n---\n${md}` : md;
-	const lines = m[1].split("\n");
+	if (!m) return line ? `---\n${line}\n---\n${text}` : text;
+	const lines = m[1] ? m[1].split("\n") : [];
 	const i = lines.findIndex((l) => l.startsWith(key + ":"));
 	if (i >= 0) {
 		if (line) lines[i] = line;
 		else lines.splice(i, 1);
 	} else if (line) lines.push(line);
-	return `---\n${lines.join("\n")}\n---` + md.slice(m[0].length);
+	const rest = text.slice(m[0].length);
+	return `---\n${lines.length ? lines.join("\n") + "\n" : ""}---\n${rest}`;
 }
+
+/** Split frontmatter lines into top-level entries (a key line plus its indented/list continuation lines). */
+function frontmatterEntries(lines: string[]): { key: string; lines: string[] }[] {
+	const out: { key: string; lines: string[] }[] = [];
+	for (const line of lines) {
+		const k = line.match(/^([^\s#:][^:]*):/);
+		if (k) out.push({ key: k[1].trim(), lines: [line] });
+		else if (out.length) out[out.length - 1].lines.push(line);
+	}
+	return out;
+}
+
+/**
+ * Carry the user's own frontmatter properties (tags, aliases, …) from the old version of a note
+ * into the newly rendered one. Keys the plugin writes itself are taken from the new version.
+ */
+export function keepUserFrontmatter(oldMd: string, newMd: string, ownKeys: string[]): string {
+	const oldLines = frontmatterLines(oldMd);
+	const newText = lf(newMd);
+	const m = newText.match(FRONTMATTER);
+	if (!oldLines || !m) return newText;
+	const own = new Set(ownKeys);
+	const newEntries = frontmatterEntries(m[1] ? m[1].split("\n") : []);
+	const present = new Set(newEntries.map((e) => e.key));
+	const extra = frontmatterEntries(oldLines).filter((e) => !own.has(e.key) && !present.has(e.key));
+	if (!extra.length) return newText;
+	const lines = [...newEntries.flatMap((e) => e.lines), ...extra.flatMap((e) => e.lines)];
+	return `---\n${lines.join("\n")}\n---\n${newText.slice(m[0].length)}`;
+}
+
+/** Frontmatter keys of quiz notes (current and Skript-Check). */
+export const QUIZ_KEYS = [
+	PLUGIN_KEY, LEGACY_KEY, "id", "source", "quelle", "pages", "seiten", "created", "erstellt", "status", "evaluated", "ausgewertet",
+	"questions", "fragen", "score", "points", "punkte", "topics", "themen", "error_types", "fehlertypen",
+];
+
+/** Frontmatter keys of progress notes (current and Skript-Check). */
+export const PROGRESS_KEYS = [PLUGIN_KEY, LEGACY_KEY, "updated", "aktualisiert", "exam", "klausur", "readiness", "reife", "score", "quizzes", "tests"];

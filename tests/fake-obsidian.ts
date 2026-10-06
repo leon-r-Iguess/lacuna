@@ -155,6 +155,14 @@ export class FakeVault {
 	async modify(f: TFile, content: string) {
 		this.files.set(f.path, content);
 	}
+	/** Hook for tests: runs right before process() reads the file (simulates edits by the user). */
+	beforeProcess: ((path: string) => void) | null = null;
+	async process(f: TFile, fn: (data: string) => string) {
+		this.beforeProcess?.(f.path);
+		const next = fn(this.files.get(f.path) as string);
+		this.files.set(f.path, next);
+		return next;
+	}
 	async read(f: TFile) {
 		return this.files.get(f.path) as string;
 	}

@@ -195,7 +195,7 @@ export class SettingsTab extends PluginSettingTab {
 		if (st.noTopicList.length) {
 			new Setting(containerEl)
 				.setName(s.declinedLists)
-				.setDesc(st.noTopicList.map((x) => x || "Vault").join(", "))
+				.setDesc(st.noTopicList.map((x) => (x && x !== "/" ? x : t().vault)).join(", "))
 				.addButton((b) =>
 					b.setButtonText(s.askAgain).onClick(async () => {
 						st.noTopicList = [];

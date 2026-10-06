@@ -3,7 +3,7 @@
 // (Themen.md from Skript-Check), so existing lists keep working.
 
 import { t } from "../i18n";
-import { LEGACY_KEY, PLUGIN_KEY } from "./quiz-markdown";
+import { LEGACY_KEY, PLUGIN_KEY, setFrontmatterValue } from "./quiz-markdown";
 import type { FileDef, TopicDef } from "./readiness";
 
 export type Weight = "high" | "medium" | "low";
@@ -38,10 +38,42 @@ export function normName(s: string): string {
 }
 
 export function normWeight(x: unknown): Weight {
-	const s = String(x ?? "").toLowerCase().trim();
-	if (s.startsWith("h") || s === "3") return "high"; // high / hoch
-	if (s.startsWith("l") || s.startsWith("n") || s === "1") return "low"; // low / niedrig
-	return "medium";
+	const v = String(x ?? "").toLowerCase().trim();
+	if (/^(h|3)/.test(v)) return "high"; // high / hoch
+	if (/^(lo|ni|ge|1)/.test(v)) return "low"; // low / niedrig / gering
+	return "medium"; // medium / mittel / normal / anything else
+}
+
+/** Split a Markdown table row into cells. Pipes inside [[link|alias]] and escaped \\| stay in their cell. */
+export function splitRow(line: string): string[] {
+	const z = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+	const cells: string[] = [];
+	let cur = "";
+	let depth = 0;
+	for (let i = 0; i < z.length; i++) {
+		const c = z[i];
+		if (c === "\\" && z[i + 1] === "|") {
+			cur += "\\|";
+			i++;
+		} else if (c === "[" && z[i + 1] === "[") {
+			depth++;
+			cur += "[[";
+			i++;
+		} else if (c === "]" && z[i + 1] === "]" && depth > 0) {
+			depth--;
+			cur += "]]";
+			i++;
+		} else if (c === "|" && depth === 0) {
+			cells.push(cur.trim());
+			cur = "";
+		} else cur += c;
+	}
+	cells.push(cur.trim());
+	return cells;
+}
+
+function isHeaderCell(c: string | undefined): boolean {
+	return /^(topic|thema)$/i.test(c ?? "");
 }
 
 export function renderTopics(l: TopicList): string {
@@ -87,8 +119,8 @@ export function parseTopics(md: string, subject = ""): TopicList | null {
 			inTable = false;
 			continue;
 		}
-		const cells = z.replace(/^\|/, "").replace(/\|$/, "").split("|").map((x) => x.trim());
-		if (/^(topic|thema)$/i.test(cells[0] ?? "")) {
+		const cells = splitRow(z);
+		if (isHeaderCell(cells[0])) {
 			inTable = true;
 			continue;
 		}
@@ -117,6 +149,43 @@ export function parseTopics(md: string, subject = ""): TopicList | null {
 		}
 	}
 	return { subject: title, topics, sources, updated };
+}
+
+/**
+ * Write an extended topic list back into the existing note without touching anything else:
+ * existing rows stay as they are (extra columns, links, formatting), only their "Also" cell is
+ * updated when new aliases were found, new topics are appended, and the sources block is replaced.
+ */
+export function updateTopicsMarkdown(oldMd: string, next: TopicList): string {
+	const lines = oldMd.replace(/\r\n/g, "\n").split("\n");
+	const header = lines.findIndex((l) => l.trim().startsWith("|") && isHeaderCell(splitRow(l)[0]));
+	if (header < 0) return renderTopics(next);
+	let end = header + 2;
+	const seen = new Set<string>();
+	for (; end < lines.length && lines[end].trim().startsWith("|"); end++) {
+		const cells = splitRow(lines[end]);
+		const topic = next.topics.find((x) => normName(x.name) === normName(cells[0] ?? ""));
+		if (!topic) continue;
+		seen.add(normName(topic.name));
+		const also = topic.also.join(", ");
+		if ((cells[3] ?? "") !== also && topic.also.length) {
+			while (cells.length < 4) cells.push("");
+			cells[3] = cell(also);
+			lines[end] = `| ${cells.join(" | ")} |`;
+		}
+	}
+	const added = next.topics.filter((x) => !seen.has(normName(x.name)));
+	lines.splice(end, 0, ...added.map((x) => `| ${cell(x.name)} | ${t().weight[x.weight]} | ${cell(x.reference)} | ${cell(x.also.join(", "))} |`));
+
+	let md = lines.join("\n");
+	const start = Math.max(md.indexOf(SOURCES_START), md.indexOf(LEGACY_SOURCES_START));
+	const block = `${SOURCES_START} ${t().topics.sourcesNote}\n${next.sources.join("\n")}${next.sources.length ? "\n" : ""}%%`;
+	if (start >= 0) {
+		const close = md.indexOf("\n%%", start);
+		md = md.slice(0, start) + block + (close >= 0 ? md.slice(close + 3) : "");
+	} else md = md.replace(/\s*$/, "") + "\n\n" + block + "\n";
+	md = setFrontmatterValue(md, "updated", next.updated);
+	return setFrontmatterValue(md, "topics", String(next.topics.length));
 }
 
 /** Raw AI output -> topics (duplicates merged). */

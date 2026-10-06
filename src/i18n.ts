@@ -10,6 +10,7 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 const EN = {
 	defaultTopic: "General",
+	vault: "Vault",
 	difficulty: { easy: "easy", medium: "medium", hard: "hard" },
 	confidence: { guessed: "guessed", unsure: "unsure", sure: "sure" },
 	errorType: {
@@ -248,6 +249,10 @@ const EN = {
 		noMistakes: (name: string) => `There are no mistakes to review in "${name}" yet.`,
 		creatingReview: (ai: string, n: number) => `${ai} is creating a review quiz (${n} questions) …`,
 		importedLegacy: "Lacuna: settings and API keys taken over from Skript-Check. You can disable Skript-Check now.",
+		nameTaken: (path: string) =>
+			`"${path}" already exists and is not a Lacuna note, so it was left untouched. Rename it or choose a different note name in the Lacuna settings.`,
+		changedDuringEvaluation:
+			"You changed your answers while the quiz was being evaluated, so the note was left as it is. Click Evaluate again to grade the new answers.",
 	},
 
 	files: {
@@ -362,6 +367,7 @@ export type Strings = typeof EN;
 
 const DE: Strings = {
 	defaultTopic: "Allgemein",
+	vault: "Tresor",
 	difficulty: { easy: "leicht", medium: "mittel", hard: "schwer" },
 	confidence: { guessed: "geraten", unsure: "unsicher", sure: "sicher" },
 	errorType: {
@@ -600,6 +606,10 @@ const DE: Strings = {
 		noMistakes: (name: string) => `In „${name}“ gibt es noch keine Fehler zum Wiederholen.`,
 		creatingReview: (ai: string, n: number) => `${ai} erstellt einen Wiederholungstest (${n} Fragen) …`,
 		importedLegacy: "Lacuna: Einstellungen und API-Keys aus Skript-Check übernommen. Skript-Check kannst du jetzt deaktivieren.",
+		nameTaken: (path: string) =>
+			`„${path}“ gibt es schon, und es ist keine Lacuna-Notiz – sie bleibt unverändert. Benenn sie um oder wähl in den Lacuna-Einstellungen einen anderen Namen.`,
+		changedDuringEvaluation:
+			"Du hast während der Auswertung deine Antworten geändert, deshalb bleibt die Notiz unverändert. Klick nochmal auf Auswerten, um die neuen Antworten zu bewerten.",
 	},
 
 	files: {
@@ -723,8 +733,9 @@ export function detectLang(): Lang {
 	}
 }
 
-export function setLang(s: LangSetting) {
-	current = s === "auto" ? detectLang() : s;
+export function setLang(s: LangSetting | string | undefined) {
+	// Unknown values (e.g. from a newer version's settings) fall back instead of breaking startup
+	current = s === "en" || s === "de" ? s : detectLang();
 }
 
 export function lang(): Lang {
