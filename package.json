@@ -1,17 +1,25 @@
 {
   "name": "lacuna",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Obsidian plugin that finds the gaps in your knowledge: AI-generated quizzes from your notes, PDFs and images, with scoring, error analysis and exam readiness.",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc --noEmit -p . && node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
-    "version": "node version-bump.mjs"
+    "version": "node version-bump.mjs",
+    "smoke": "node scripts/smoke.cjs dist/main.js"
   },
-  "keywords": ["obsidian", "obsidian-plugin", "learning", "quiz", "spaced-repetition", "fsrs", "ai"],
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "learning",
+    "quiz",
+    "spaced-repetition",
+    "fsrs",
+    "ai"
+  ],
   "author": "Leon",
   "license": "MIT",
   "devDependencies": {

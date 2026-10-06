@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- Fix: Lacuna failed to load while Skript-Check was still enabled (both registered the `skript-check` code block). Lacuna now leaves those blocks to Skript-Check until it is disabled.
+- CI loads the built plugin once against a stubbed Obsidian API, so startup errors are caught before a release.
+
 ## 0.5.0 – Lacuna
 
 First release under the name **Lacuna**.

@@ -37,6 +37,8 @@ jobs:
         run: npm test
       - if: steps.exists.outputs.skip != 'true'
         run: npm run build
+      - if: steps.exists.outputs.skip != 'true'
+        run: npm run smoke
       - name: Create release
         if: steps.exists.outputs.skip != 'true'
         env:

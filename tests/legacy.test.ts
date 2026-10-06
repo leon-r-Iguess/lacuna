@@ -148,6 +148,15 @@ describe("old vault in the plugin", () => {
 		expect(progress).toContain("quizzes: 2");
 	});
 
+	it("loads even while Skript-Check is still enabled and owns the skript-check blocks", async () => {
+		const app2 = new ob.App();
+		ob.registeredBlocks.add("skript-check"); // registered by the still-enabled Skript-Check
+		const p = new LacunaPlugin(app2 as any, { dir: ".obsidian/plugins/lacuna" } as any);
+		await expect(p.onload()).resolves.toBeUndefined();
+		expect(p.codeBlocks.has("lacuna")).toBe(true);
+		expect(p.commands.length).toBeGreaterThan(5);
+	});
+
 	it("a vault without Skript-Check gets the default settings for its language", async () => {
 		setLang("en");
 		const app2 = new ob.App();

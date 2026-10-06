@@ -259,8 +259,14 @@ export default class LacunaPlugin extends Plugin {
 			}),
 		);
 
-		// "lacuna" blocks, plus "skript-check" blocks in notes created by the German predecessor
-		for (const key of [PLUGIN_KEY, LEGACY_KEY]) this.registerMarkdownCodeBlockProcessor(key, (src, el, ctx) => this.codeBlock(src, el, ctx.sourcePath));
+		this.registerMarkdownCodeBlockProcessor(PLUGIN_KEY, (src, el, ctx) => this.codeBlock(src, el, ctx.sourcePath));
+		// Buttons in notes created by Skript-Check (the German predecessor). If Skript-Check is still
+		// enabled it owns this block type and Obsidian refuses a second registration – that must not stop Lacuna.
+		try {
+			this.registerMarkdownCodeBlockProcessor(LEGACY_KEY, (src, el, ctx) => this.codeBlock(src, el, ctx.sourcePath));
+		} catch (e) {
+			console.warn("[Lacuna] skript-check blocks are handled by Skript-Check while it is enabled", e);
+		}
 
 		if (this.settings.statusBar) {
 			this.statusEl = this.addStatusBarItem();

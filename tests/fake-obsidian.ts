@@ -186,6 +186,9 @@ export class FakeVault {
 }
 
 export class App {
+	constructor() {
+		registeredBlocks.clear(); // fresh "Obsidian" per test
+	}
 	vault = new FakeVault();
 	active: TFile | null = null;
 	opened: string[] = [];
@@ -208,6 +211,9 @@ export class App {
 	};
 }
 
+/** Code block types registered by "other plugins" (tests can add to it). Reset per test. */
+export const registeredBlocks = new Set<string>();
+
 export class Plugin {
 	commands: any[] = [];
 	codeBlocks = new Map<string, any>();
@@ -228,6 +234,9 @@ export class Plugin {
 		return e;
 	}
 	registerMarkdownCodeBlockProcessor(n: string, fn: any) {
+		// Like Obsidian: a block type can only be registered once across all plugins
+		if (registeredBlocks.has(n)) throw new Error(`Code block processor for "${n}" is already registered`);
+		registeredBlocks.add(n);
 		this.codeBlocks.set(n, fn);
 	}
 	async loadData() {
