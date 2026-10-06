@@ -111,7 +111,7 @@ npm run build      # type check + bundle to dist/main.js
 
 To try a build in a vault, copy `dist/main.js`, `manifest.json` and `styles.css` into `.obsidian/plugins/lacuna/`.
 
-Releases: `npm version <x.y.z>` updates `manifest.json` and `versions.json`; pushing the tag builds the release on GitHub.
+Releases: `npm version <x.y.z> --no-git-tag-version`, commit and push to `main`. The release workflow sees the new version in `manifest.json` and publishes the GitHub release with `main.js`, `manifest.json` and `styles.css`.
 
 ## License
 

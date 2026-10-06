@@ -1,10 +1,12 @@
 name: Release
 
-# Push a tag like 0.5.0 (same as the version in manifest.json, without "v")
+# Creates a GitHub release (and its tag) whenever manifest.json on main carries a
+# version that has no release yet. Bump the version with `npm version <x.y.z>` and push.
 on:
   push:
-    tags:
-      - "*"
+    branches: [main]
+    paths: [manifest.json]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,17 +20,28 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - name: Check that the tag matches manifest.json
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./manifest.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Skip if this version is already released
+        id: exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(node -p "require('./manifest.json').version")
-          test "$VERSION" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} does not match manifest version $VERSION"; exit 1; }
+          if gh release view "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.exists.outputs.skip != 'true'
+        run: npm ci
+      - if: steps.exists.outputs.skip != 'true'
+        run: npm test
+      - if: steps.exists.outputs.skip != 'true'
+        run: npm run build
       - name: Create release
+        if: steps.exists.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp dist/main.js main.js
-          gh release create "${GITHUB_REF_NAME}" main.js manifest.json styles.css \
-            --title "${GITHUB_REF_NAME}" --generate-notes
+          gh release create "${{ steps.version.outputs.version }}" main.js manifest.json styles.css \
+            --target "${GITHUB_SHA}" --title "${{ steps.version.outputs.version }}" --generate-notes
