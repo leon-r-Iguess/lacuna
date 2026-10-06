@@ -5,7 +5,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: [manifest.json]
+    paths: [manifest.json, .github/workflows/release.yml]
   workflow_dispatch:
 
 permissions:
