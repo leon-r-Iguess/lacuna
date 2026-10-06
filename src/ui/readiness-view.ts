@@ -23,10 +23,10 @@ export function renderReadinessView(el: HTMLElement, k: ReadinessContext, cap: n
 
 	const track = el.createDiv({ cls: "lacuna-readiness-bar" });
 	const fill = track.createDiv({ cls: `lacuna-readiness-fill lacuna-${level}` });
-	fill.style.width = `${r.percent}%`;
+	fill.setCssProps({ "--lacuna-fill": `${r.percent}%` });
 	if (r.percentAtExam !== null && r.daysToExam !== null && r.daysToExam > 0) {
 		const marker = track.createDiv({ cls: "lacuna-readiness-forecast" });
-		marker.style.left = `${r.percentAtExam}%`;
+		marker.setCssProps({ "--lacuna-forecast": `${r.percentAtExam}%` });
 		marker.setAttr("aria-label", s.forecast(r.percentAtExam));
 	}
 	el.createDiv({

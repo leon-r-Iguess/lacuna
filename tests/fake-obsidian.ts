@@ -83,6 +83,9 @@ export class FakeEl {
 	addClass(c: string) {
 		this.classes.push(c);
 	}
+	setCssProps(props: Record<string, string>) {
+		Object.assign(this.style, props);
+	}
 	setAttr(k: string, v: string) {
 		this.attrs[k] = v;
 	}

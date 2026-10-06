@@ -45,6 +45,7 @@
   margin-bottom: 0.6em;
 }
 .lacuna-readiness-fill {
+  width: var(--lacuna-fill, 0%);
   height: 100%;
   border-radius: 6px;
   transition: width 0.4s ease;
@@ -54,6 +55,7 @@
 .lacuna-readiness-fill.lacuna-good { background: var(--color-green); }
 .lacuna-readiness-forecast {
   position: absolute;
+  left: var(--lacuna-forecast, 0%);
   top: -3px;
   width: 2px;
   height: 18px;
