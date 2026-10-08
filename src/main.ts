@@ -4,6 +4,7 @@ import { LangSetting, lang, setLang, t } from "./i18n";
 import { Cost, addCost, computeCost, costText } from "./core/cost";
 import { readDataBlock } from "./core/embed";
 import { fromLegacy, settingsFromLegacy } from "./core/legacy";
+import { linkReference } from "./core/reference";
 import { Pattern, aggregate, readPatterns, renderProgress, reviewMaterial } from "./core/progress";
 import {
 	SCHEMA_EVALUATE,
@@ -496,6 +497,8 @@ export default class LacunaPlugin extends Plugin {
 		fromFolder?: boolean;
 		review?: boolean;
 		source: string;
+		/** Files the AI saw; references to them become links */
+		sourceFiles: string[];
 		pages: string;
 		targetFolder: string;
 		fileName: (title: string, now: Date) => string;
@@ -530,6 +533,7 @@ export default class LacunaPlugin extends Plugin {
 				Math.min(16000, 1500 + o.choice.count * 700),
 			);
 			const { title, questions } = normalizeQuestions(raw, o.choice.questionTypes, t().defaultTopic);
+			for (const x of questions) x.reference = linkReference(x.reference, o.sourceFiles, t().md.pageAbbr);
 			const now = new Date();
 			await this.ensureFolder(o.targetFolder);
 			const q: QuizData = {
@@ -570,6 +574,7 @@ export default class LacunaPlugin extends Plugin {
 				sourceContent: src.content,
 				choice: w,
 				source: f.path,
+				sourceFiles: [f.path],
 				pages: src.pages,
 				targetFolder: normalizePath(`${f.parent?.path ?? ""}/${this.settings.quizFolder}`),
 				fileName: (title, now) => t().files.quiz(safeFileName(title), localStamp(now)),
@@ -583,8 +588,9 @@ export default class LacunaPlugin extends Plugin {
 		await this.rememberStyleTemplate(o, w.styleTemplate);
 		await this.exclusive("folder:" + o.path, async () => {
 			let src;
+			const files = this.folderSources(o, w.styleTemplate);
 			try {
-				src = await loadFolderSource(this.app, o, this.folderSources(o, w.styleTemplate));
+				src = await loadFolderSource(this.app, o, files);
 			} catch (e) {
 				return this.fail(e);
 			}
@@ -595,6 +601,7 @@ export default class LacunaPlugin extends Plugin {
 				choice: w,
 				fromFolder: true,
 				source: o.path,
+				sourceFiles: files.map((x) => x.path),
 				pages: "",
 				targetFolder: this.quizFolderOf(o),
 				fileName: (title, now) => t().files.folderQuiz(safeFileName(o.name || t().vault), safeFileName(title), localStamp(now)),
@@ -709,7 +716,7 @@ export default class LacunaPlugin extends Plugin {
 					options: [],
 					correct: null,
 					solution: [e.correct, orig?.solution].filter(Boolean).join(" "),
-					reference: e.reference || orig?.reference || "",
+					reference: orig?.reference || e.reference || "",
 				});
 			}
 			if (!questions.length) {
@@ -944,6 +951,7 @@ export default class LacunaPlugin extends Plugin {
 				choice: { ...this.defaultChoice(), count, styleTemplate: this.settings.styleTemplates[o.path] ?? "" },
 				review: true,
 				source: this.progressPath(o),
+				sourceFiles: [],
 				pages: "",
 				targetFolder: this.quizFolderOf(o),
 				fileName: (_t, now) => t().files.review(safeFileName(o.name), localStamp(now)),
@@ -1072,7 +1080,7 @@ export default class LacunaPlugin extends Plugin {
 					const merged = normalizeTopics(r.data);
 					if (merged.length) topics = merged;
 				}
-				topics = normalizeTopics({ topics });
+				topics = normalizeTopics({ topics }).map((x) => ({ ...x, reference: linkReference(x.reference, [...(list?.sources ?? []), ...b.files], t().md.pageAbbr) }));
 				if (!topics.length && !list) throw new Error(s.noTopics);
 				const today = localDate(new Date());
 				const next = list ? extendTopics(list, topics, b.files, today) : { subject: name, topics, sources: [...b.files].sort(), updated: today };

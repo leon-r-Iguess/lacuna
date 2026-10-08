@@ -32,7 +32,7 @@ Rules for good questions:
 - Cover the central topics. No questions about organization, slide titles, literature, authors or page numbers.
 - Only content that appears in the source or follows directly from it.
 - "topic" is a short, reusable subtopic (2–4 words), e.g. "802.1Q tagging", not the whole question. Use the same topic for related questions.
-- "reference": where in the source this is covered. The source contains markers like [Page 12]; then name the page, otherwise the section.
+- "reference": where in the source this is covered. The source contains markers like [Page 12]; then name the page ("p. 12–14"), otherwise the section. With several files (=== File: path ===), start with the full file path, e.g. "Folder/Script.pdf, p. 12–14". Do not copy the === or [Page] markers themselves.
 - ${LANGUAGE_RULE}`;
 
 export function userPromptCreate(o: CreateOptions): string {
@@ -60,7 +60,7 @@ export function userPromptCreate(o: CreateOptions): string {
 		);
 	if (o.fromFolder)
 		parts.push(
-			"The source consists of several files (marked with === File: … ===). Spread the questions sensibly over the most important topics of all files. Name the file and, if available, the page in reference.",
+			"The source consists of several files (marked with === File: … ===). Spread the questions sensibly over the most important topics of all files. Name the full file path and, if available, the page in reference.",
 		);
 	if (o.topics && o.topics.length)
 		parts.push(`The subject has a topic list. Set "topic" of every question to EXACTLY one of these names (verbatim, the best fit): ${o.topics.map((x) => `"${x}"`).join(", ")}.`);
@@ -290,7 +290,7 @@ Rules:
 - Depending on the scope, 6–25 topics. No organization, literature, introduction or recap slides.
 - "name": 1–5 words, technical terms as in the source.
 - "weight": "high" = central, lots of space in the material or explicitly marked as important/exam-relevant; "medium" = regular material; "low" = side topic, excursion, example.
-- "reference": file and page or section (use markers like [Page 12] and === File: … ===).
+- "reference": full file path (from === File: path ===) and page or section, e.g. "Folder/Script.pdf, p. 12–14" or "Folder/Note.md (section Interfaces)". Several places separated by "; ", each with its full path. Do not copy the === or [Page] markers themselves.
 - "also": names from PREVIOUS QUIZ TOPICS (if given) that belong to this topic in content – copy them verbatim. Otherwise an empty list.
 - Language: topic names in the SAME language as the source material. Answer in the given JSON format.`;
 

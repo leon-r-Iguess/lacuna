@@ -71,6 +71,8 @@ const EN = {
 		whatWasWrong: "What was wrong",
 		correct: "Correct",
 		reference: "Reference",
+		/** Before page numbers in reference links: "Script – p. 4–7" */
+		pageAbbr: "p.",
 		followUp: "Follow-up",
 		hypercorrection: "You were sure – exactly these mistakes stick best once you read the correction consciously now.",
 		followUpRound: "Follow-up round",
@@ -428,6 +430,7 @@ const DE: Strings = {
 		whatWasWrong: "Was falsch war",
 		correct: "Richtig",
 		reference: "Fundstelle",
+		pageAbbr: "S.",
 		followUp: "Nachfrage",
 		hypercorrection: "Du warst dir sicher – genau solche Fehler bleiben besonders gut hängen, wenn du die Korrektur jetzt bewusst liest.",
 		followUpRound: "Nachfragen-Runde",

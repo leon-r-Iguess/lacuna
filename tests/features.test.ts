@@ -89,6 +89,14 @@ describe("2. quiz from a folder", () => {
 		expect(app.vault.files.get(created[0])).toContain('source: "Folder Uni/Networks"');
 	});
 
+	it("question references become links to the folder's files", async () => {
+		const q = { ...QUESTIONS, questions: [{ ...QUESTIONS.questions[0], reference: "Uni/Networks/Chapter 2.md (802.1Q)" }, { ...QUESTIONS.questions[1], reference: "Unknown.md" }] };
+		ob.requestUrl.mockResolvedValueOnce(claudeReply(q));
+		await plugin.createFolderQuiz(app.vault.getAbstractFileByPath("Uni/Networks") as any, { count: 2 });
+		const data = readDataBlock(app.vault.files.get(filesUnder(app, "Uni/Networks/Quizzes/Folder quiz")[0]) as string)!;
+		expect(data.questions.map((x) => x.reference)).toEqual(["[[Uni/Networks/Chapter 2.md|Chapter 2]] (802.1Q)", "Unknown.md"]);
+	});
+
 	it("empty folder: notice instead of a request", async () => {
 		await app.vault.createFolder("Uni/Empty");
 		await plugin.openFolderDialog(app.vault.getAbstractFileByPath("Uni/Empty") as any);

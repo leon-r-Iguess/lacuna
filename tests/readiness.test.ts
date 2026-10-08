@@ -318,6 +318,15 @@ describe("exam readiness in the plugin", () => {
 		expect(asked).toHaveLength(0);
 	});
 
+	it("references become links to the source files (raw markers from 0.5.2 included)", async () => {
+		ob.requestUrl.mockResolvedValueOnce(
+			claudeReply({ topics: [{ name: "VLAN", weight: "high", reference: "=== File: Uni/Networks/L1.md === (VLAN basics); L2.md", also: [] }] }),
+		);
+		await plugin.topicList(networks(), true);
+		const md = app.vault.files.get("Uni/Networks/Topics.md") as string;
+		expect(md).toContain("| VLAN | high | [[Uni/Networks/L1.md\\|L1]] (VLAN basics); [[Uni/Networks/L2.md\\|L2]] |  |");
+	});
+
 	it("creates the list, quizzes use its topics, new files are added", async () => {
 		ob.requestUrl.mockResolvedValueOnce(claudeReply(TOPICS));
 		await plugin.topicList(networks(), true);

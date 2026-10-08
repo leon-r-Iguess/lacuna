@@ -4,6 +4,7 @@
 
 import { t } from "../i18n";
 import { LEGACY_KEY, PLUGIN_KEY, setFrontmatterValue } from "./quiz-markdown";
+import { escapeLinkPipes } from "./reference";
 import type { FileDef, TopicDef } from "./readiness";
 
 export type Weight = "high" | "medium" | "low";
@@ -30,7 +31,13 @@ const SOURCES_START = "%%lacuna-sources";
 const LEGACY_SOURCES_START = "%%skript-check-quellen";
 
 function cell(s: string): string {
-	return String(s ?? "").replace(/\|/g, "/").replace(/\n/g, " ").trim();
+	// Wikilinks keep their alias pipe (escaped for the table), any other pipe would split the cell
+	return String(s ?? "")
+		.split(/(\[\[[^\]]*\]\])/)
+		.map((part, i) => (i % 2 ? escapeLinkPipes(part) : part.replace(/\|/g, "/")))
+		.join("")
+		.replace(/\n/g, " ")
+		.trim();
 }
 
 export function normName(s: string): string {
@@ -198,7 +205,7 @@ export function normalizeTopics(raw: any): Topic[] {
 		const next: Topic = {
 			name,
 			weight: normWeight(x?.weight),
-			reference: String(x?.reference ?? "").trim().slice(0, 120),
+			reference: String(x?.reference ?? "").trim().slice(0, 300),
 			also: Array.isArray(x?.also) ? x.also.map((y: unknown) => String(y).trim()).filter(Boolean) : [],
 		};
 		const old = out.find((y) => normName(y.name) === normName(name));

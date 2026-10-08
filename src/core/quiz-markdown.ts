@@ -260,7 +260,9 @@ export function renderEvaluated(q: QuizData, answers: Answer[], r: Result, readi
 				const body: string[] = [];
 				if (e.whatWasWrong) body.push(`**${s.whatWasWrong}:** ${e.whatWasWrong}`);
 				if (e.correct) body.push(`**${s.correct}:** ${e.correct}`);
-				if (e.reference) body.push(`**${s.reference}:** ${e.reference}`);
+				// The question's reference was turned into a link at creation; the AI's copy is plain text
+				const reference = f.reference || e.reference;
+				if (reference) body.push(`**${s.reference}:** ${reference}`);
 				if (e.followUp) body.push(`**${s.followUp}:** ${e.followUp}`);
 				if (isConfidentError(e)) body.push(`*${s.hypercorrection}*`);
 				parts.push(`> ${title}`);

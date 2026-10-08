@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3
+
+- References are clickable: in the topic list and in evaluated quizzes they link to the source file, PDFs straight to the page (`[[Script.pdf#page=12|Script – p. 12–14]]`). Only files Lacuna actually read are linked; anything else stays text. Topic lists built with 0.5.2 showed raw markers like `=== File: … === [Page 4]` – delete the list and build it again to get links.
+- Dev dependency `moment` (pulled in by the `obsidian` type package, not part of the plugin) pinned to 2.31.0 to clear a moderate npm audit advisory.
+
 ## 0.5.2
 
 Fixes from a full code review, mainly to make sure Lacuna never destroys anything you wrote:
