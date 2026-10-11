@@ -135,6 +135,16 @@ export class SettingsTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName(s.includeFigures)
+			.setDesc(s.includeFiguresDesc)
+			.addToggle((x) =>
+				x.setValue(st.includeFigures).onChange(async (v) => {
+					st.includeFigures = v;
+					await save();
+				}),
+			);
+
+		new Setting(containerEl)
 			.setName(s.quizFolder)
 			.setDesc(s.quizFolderDesc)
 			.addText((x) =>

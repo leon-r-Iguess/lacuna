@@ -87,6 +87,8 @@ export interface Settings {
 	readinessCap: number;
 	/** Ask "How sure are you?" per question */
 	askConfidence: boolean;
+	/** Default for "include figures from PDFs" (extra tokens) */
+	includeFigures: boolean;
 	/** Exam readiness of the current subject in the status bar */
 	statusBar: boolean;
 	/** Subject folders where the learner declined a topic list */
@@ -113,6 +115,7 @@ export const DEFAULTS: Settings = {
 	targetRetention: 0.9,
 	readinessCap: 80,
 	askConfidence: true,
+	includeFigures: false,
 	statusBar: true,
 	noTopicList: [],
 };
@@ -417,7 +420,15 @@ export default class LacunaPlugin extends Plugin {
 	}
 
 	private defaultChoice(): CreateChoice {
-		return { count: this.settings.defaultCount, pages: "", focus: "", questionTypes: this.settings.questionTypes, level: this.settings.level, styleTemplate: "" };
+		return {
+			count: this.settings.defaultCount,
+			pages: "",
+			focus: "",
+			questionTypes: this.settings.questionTypes,
+			level: this.settings.level,
+			styleTemplate: "",
+			figures: this.settings.includeFigures,
+		};
 	}
 
 	private async open(path: string) {
@@ -445,6 +456,7 @@ export default class LacunaPlugin extends Plugin {
 			pageCount,
 			choice: { ...this.defaultChoice(), styleTemplate: this.settings.styleTemplates[subject.path] ?? "" },
 			pastExams: findPastExams(this.app, subject).filter((k) => k.path !== f.path),
+			figuresOption: sourceKind(f) === "pdf",
 			go: (w) => this.createQuiz(f, w),
 		}).open();
 	}
@@ -467,6 +479,7 @@ export default class LacunaPlugin extends Plugin {
 			pageCount: null,
 			choice: { ...this.defaultChoice(), count: Math.max(this.settings.defaultCount, 12), styleTemplate: this.settings.styleTemplates[o.path] ?? "", ...preset },
 			pastExams: findPastExams(this.app, o),
+			figuresOption: files.some((x) => sourceKind(x) === "pdf"),
 			go: (w) => this.createFolderQuiz(o, w),
 		}).open();
 	}
@@ -568,7 +581,7 @@ export default class LacunaPlugin extends Plugin {
 		await this.exclusive("create:" + f.path, async () => {
 			let src;
 			try {
-				src = await loadSource(this.app, f, w.pages);
+				src = await loadSource(this.app, f, w.pages, { figures: w.figures });
 			} catch (e) {
 				return this.fail(e);
 			}
@@ -595,7 +608,7 @@ export default class LacunaPlugin extends Plugin {
 			let src;
 			const files = this.folderSources(o, w.styleTemplate);
 			try {
-				src = await loadFolderSource(this.app, o, files);
+				src = await loadFolderSource(this.app, o, files, { figures: w.figures });
 			} catch (e) {
 				return this.fail(e);
 			}

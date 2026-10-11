@@ -14,7 +14,7 @@ Lacuna ist ein Plugin für [Obsidian](https://obsidian.md). Es macht aus deinen 
 
 - **Tests aus allem in deinem Vault** – eine Notiz, eine PDF (mit Seitenbereich), ein Tafelbild oder ein ganzer Ordner. Multiple Choice und offene Fragen, drei Niveaus.
 - **Echte Bewertung statt nur richtig/falsch** – Teilpunkte bei offenen Fragen, zu jedem Fehler ein Fehlertyp (Wissenslücke, Verwechslung, unvollständig, Anwendungsfehler, Rechenfehler, ungenau), was falsch war, die richtige Herleitung, die Fundstelle und eine Nachfrage.
-- **Grafiken in Fragen** – eine Frage kann die Abbildung aus deinen Unterlagen zeigen, um die es geht (ein Bild in deiner Notiz, eine Bilddatei, eine Seite einer eingescannten PDF): „Was gibt diese Schaltung bei A = 1, B = 0 aus?“ mit der Schaltung von deiner Folie. Wahrheitstabellen, Zustandsautomaten, Abläufe und Protokoll-Sequenzen können auch als Tabelle oder Mermaid-Diagramm erscheinen, und manche Fragen lassen dich eine Tabelle vervollständigen.
+- **Grafiken in Fragen** – eine Frage kann die Abbildung aus deinen Unterlagen zeigen, um die es geht (ein Bild in deiner Notiz, eine Bilddatei, eine PDF-Seite): „Was gibt diese Schaltung bei A = 1, B = 0 aus?“ mit der Schaltung von deiner Folie. Wahrheitstabellen, Zustandsautomaten, Abläufe und Protokoll-Sequenzen können auch als Tabelle oder Mermaid-Diagramm erscheinen, und manche Fragen lassen dich eine Tabelle vervollständigen. Bei PDFs mit Textebene schaltest du dafür **Abbildungen aus PDFs mitschicken** ein (standardmäßig aus, kostet zusätzliche Tokens): Seiten mit Schaltungen, Diagrammen oder Plots gehen dann zusätzlich als Bild an die KI.
 - **Nachfragen-Runde** – ein Klick macht aus den Nachfragen einen neuen Test, ohne weiteren KI-Aufruf.
 - **Altklausur als Stilvorlage** – Fragen im Stil und auf dem Niveau einer alten Klausur, Inhalt aus deinen Unterlagen.
 - **Klausurreife** – ein Live-Balken in der Lernstand-Notiz:
@@ -79,7 +79,7 @@ Die Selbsteinschätzung fließt bewusst **nicht** ein: Sie wird nur als Kalibrie
 ## Datenschutz und Hinweise
 
 - **Netzwerk:** Lacuna schickt Inhalte an den KI-Anbieter, den du wählst (Anthropic, Google oder OpenAI), und nur wenn du
-  - einen Test erstellst (die gewählte Notiz, PDF-Seiten, Bilder oder den Ordner),
+  - einen Test erstellst (die gewählte Notiz, PDF-Seiten, Bilder oder den Ordner; mit „Abbildungen aus PDFs mitschicken“ auch Seiten mit Abbildungen als Bild),
   - einen Test auswertest (Fragen, Musterlösungen und deine Antworten, dazu die Bilder der Abbildungen in den Fragen),
   - den Lernstand von Hand aktualisierst (deine bisherigen Fehler, um Fehlermuster zu finden),
   - eine Themenliste erstellst oder ergänzt (die Unterlagen des Fach-Ordners, nach Bestätigung einer Kostenschätzung).

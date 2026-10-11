@@ -1,11 +1,14 @@
 # Changelog
 
-## Unreleased (0.6.0)
+## 0.6.0
+
+Figures in questions.
 
 - Figures in questions: where a structure is easier to see than to read (truth table, state machine, flowchart, protocol sequence), the question shows it as a Markdown table or Mermaid diagram. Figures are checked before they go into the note; a broken one is dropped and the question stays.
 - New task form "complete the table": the table sits below **Answer:** with the given cells filled in. A table left untouched counts as not answered.
 - Grading sees the figure and the table, and follow-up questions keep the figure they refer to.
 - Real figures from your material: images embedded in a note, image files and pages of scanned PDFs are numbered for the AI (F1, F2, …). A question about one of them shows it right below the question text (`![[circuit.png]]`, `![[Scan.pdf#page=11]]`). Only figures Lacuna actually sent can be embedded, so there are no broken links. When grading, the image is sent again so the answer can be checked against it (skipped if the file was moved or deleted).
+- New option **Include figures from PDFs** (settings and create dialog, off by default): for PDFs with a text layer, pages with figures are found from the PDF's drawing operations (large images, many vector paths; a logo repeated on every page does not count) and sent as images in addition to the text, up to 10 per quiz. Costs about 1,600 tokens per page with Claude and ChatGPT, about 260 with Gemini. A notice says how many pages were sent. Questions about these pages show them (`![[Slides.pdf#page=12]]`), and grading renders the page again.
 - CI attaches the plugin files (`main.js`, `manifest.json`, `styles.css`) to every run as the artifact `lacuna-build`, for testing a pull request in a vault.
 
 ## 0.5.3
