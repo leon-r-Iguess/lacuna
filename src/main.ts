@@ -53,7 +53,8 @@ import {
 } from "./core/topics";
 import { Level, Question, QuestionTypes, QuizData } from "./core/types";
 import { localDate, localStamp, newId, safeFileName } from "./core/util";
-import { FolderChunks, findPastExams, folderFiles, loadFolderChunks, loadFolderSource, loadSource, loadStyleTemplate, pdfPageCount, sourceKind } from "./sources";
+import { FolderChunks, figureImage, findPastExams, folderFiles, loadFolderChunks, loadFolderSource, loadSource, loadStyleTemplate, pdfPageCount, sourceKind } from "./sources";
+import { FigureList } from "./core/figures";
 import { ChoiceDialog, ChoiceOption } from "./ui/choice-dialog";
 import { CreateDialog, CreateChoice } from "./ui/create-dialog";
 import { DateDialog } from "./ui/date-dialog";
@@ -505,6 +506,8 @@ export default class LacunaPlugin extends Plugin {
 		titlePrefix?: string;
 		/** Folder whose topic list applies */
 		subject: TFolder;
+		/** Figures the AI is shown; questions may point to them */
+		figures?: FigureList;
 	}) {
 		const status = new Notice(o.statusText, 0);
 		try {
@@ -526,13 +529,14 @@ export default class LacunaPlugin extends Plugin {
 							fromFolder: o.fromFolder,
 							review: o.review,
 							topics,
+							figures: o.figures,
 						}),
 					},
 				],
-				schemaCreate(topics),
+				schemaCreate(topics, o.figures),
 				Math.min(16000, 1500 + o.choice.count * 700),
 			);
-			const { title, questions } = normalizeQuestions(raw, o.choice.questionTypes, t().defaultTopic);
+			const { title, questions } = normalizeQuestions(raw, o.choice.questionTypes, t().defaultTopic, o.figures);
 			for (const x of questions) x.reference = linkReference(x.reference, o.sourceFiles, t().md.pageAbbr);
 			const now = new Date();
 			await this.ensureFolder(o.targetFolder);
@@ -579,6 +583,7 @@ export default class LacunaPlugin extends Plugin {
 				targetFolder: normalizePath(`${f.parent?.path ?? ""}/${this.settings.quizFolder}`),
 				fileName: (title, now) => t().files.quiz(safeFileName(title), localStamp(now)),
 				subject: this.subjectFolder(f),
+				figures: src.figures,
 			});
 		});
 	}
@@ -606,6 +611,7 @@ export default class LacunaPlugin extends Plugin {
 				targetFolder: this.quizFolderOf(o),
 				fileName: (title, now) => t().files.folderQuiz(safeFileName(o.name || t().vault), safeFileName(title), localStamp(now)),
 				subject: o,
+				figures: src.figures,
 			});
 		});
 	}
@@ -639,10 +645,20 @@ export default class LacunaPlugin extends Plugin {
 				let summary = "";
 				let cost: Cost | undefined = q.cost;
 				if (toAI.length) {
-					const items = evaluationItems(toAI, answers, maxPoints);
+					// Figures the questions are about go along as images, so the grading can check against them
+					const figureContent: Content[] = [];
+					const attached = new Set<number>();
+					for (const x of toAI) {
+						if (!x.figure) continue;
+						const img = await figureImage(this.app, x.figure);
+						if (!img) continue;
+						figureContent.push(img, { type: "text", text: `Figure of question ${x.nr}` });
+						attached.add(x.nr);
+					}
+					const items = evaluationItems(toAI, answers, maxPoints, attached);
 					const r = await this.ai<{ evaluations: AIEvaluation[]; summary: string }>(
 						SYSTEM_EVALUATE,
-						[{ type: "text", text: userPromptEvaluate(q.title, items) }],
+						[...figureContent, { type: "text", text: userPromptEvaluate(q.title, items) }],
 						SCHEMA_EVALUATE,
 						Math.min(16000, 1500 + toAI.length * 600),
 					);
@@ -717,7 +733,8 @@ export default class LacunaPlugin extends Plugin {
 					correct: null,
 					solution: [e.correct, orig?.solution].filter(Boolean).join(" "),
 					reference: orig?.reference || e.reference || "",
-					// Keep the figure: the follow-up question usually refers to it
+					// Keep the figures: the follow-up question usually refers to them
+					...(orig?.figure ? { figure: orig.figure } : {}),
 					...(orig?.visual ? { visual: orig.visual } : {}),
 				});
 			}

@@ -5,6 +5,8 @@ import { App, TFile, TFolder, arrayBufferToBase64, loadPdfJs } from "obsidian";
 import { Content } from "./ai";
 import { t } from "./i18n";
 import { imageEmbeds, mediaType, pageRangeText, parsePageRange } from "./core/util";
+import { FigureList } from "./core/figures";
+import { Figure } from "./core/types";
 
 export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"];
 const MAX_CHARS = 300_000; // ~75k tokens
@@ -28,6 +30,8 @@ export interface SourceContent {
 	/** For display, e.g. "12-30" */
 	pages: string;
 	hint?: string;
+	/** Figures the AI is shown (images, scanned PDF pages); questions may point to them */
+	figures: FigureList;
 }
 
 async function imageContent(app: App, f: TFile): Promise<Content | null> {
@@ -49,6 +53,8 @@ interface PdfText {
 	text: string;
 	/** "" = all pages */
 	range: string;
+	/** Pages that were read */
+	pages: number[];
 	/** Hardly any text -> probably scanned */
 	scanned: boolean;
 	buf: ArrayBuffer;
@@ -78,6 +84,7 @@ async function pdfText(app: App, f: TFile, pageInput: string): Promise<PdfText> 
 	return {
 		text: parts.join("\n\n"),
 		range: pageInput.trim() ? pageRangeText(pages) : "",
+		pages,
 		scanned: chars / Math.max(1, pages.length) < 60,
 		buf,
 		pageCount: pages.length,
@@ -88,18 +95,35 @@ function pdfDocument(buf: ArrayBuffer): Content {
 	return { type: "document", source: { type: "base64", media_type: "application/pdf", data: arrayBufferToBase64(buf) } };
 }
 
+interface NoteImage {
+	path: string;
+	content: Content;
+}
+
 /** Note text plus embedded images. */
-async function noteContent(app: App, f: TFile, maxImages: number): Promise<{ text: string; images: Content[] }> {
+async function noteContent(app: App, f: TFile, maxImages: number): Promise<{ text: string; images: NoteImage[] }> {
 	const text = await app.vault.cachedRead(f);
-	const images: Content[] = [];
+	const images: NoteImage[] = [];
 	for (const link of imageEmbeds(text)) {
 		if (images.length >= maxImages) break;
 		const target = app.metadataCache.getFirstLinkpathDest(link, f.path);
 		if (!target) continue;
 		const b = await imageContent(app, target);
-		if (b) images.push(b);
+		if (b) images.push({ path: target.path, content: b });
 	}
 	return { text, images };
+}
+
+/** An image followed by its figure label (if it can be embedded in a quiz). */
+function labeledImage(figures: FigureList, path: string, content: Content): Content[] {
+	const f = figures.add(path, "image");
+	return f ? [content, { type: "text", text: figures.label(f) }] : [content];
+}
+
+/** Figure label for a PDF sent as a document (scanned), or "". */
+function pdfFigureLabel(figures: FigureList, path: string, pages: number[]): string {
+	const f = figures.add(path, "pdf", pages);
+	return f ? `\n${figures.label(f)}` : "";
 }
 
 // ------------------------------------------------------------------ Single file
@@ -107,10 +131,13 @@ async function noteContent(app: App, f: TFile, maxImages: number): Promise<{ tex
 export async function loadSource(app: App, f: TFile, pageInput: string): Promise<SourceContent> {
 	const s = t().sources;
 	const kind = sourceKind(f);
+	const figures = new FigureList();
 	if (kind === "image") {
 		const b = await imageContent(app, f);
 		if (!b) throw new Error(s.imageTooLarge);
-		return { content: [b, { type: "text", text: `Source: image "${f.name}" (e.g. blackboard photo, slide or handwritten notes).` }], pages: "" };
+		const fig = figures.add(f.path, "image");
+		const label = fig ? `\n${figures.label(fig)}` : "";
+		return { content: [b, { type: "text", text: `Source: image "${f.name}" (e.g. blackboard photo, slide or handwritten notes).${label}` }], pages: "", figures };
 	}
 
 	if (kind === "note") {
@@ -118,8 +145,12 @@ export async function loadSource(app: App, f: TFile, pageInput: string): Promise
 		if (text.length > MAX_CHARS) throw new Error(s.noteTooLong);
 		if (text.trim().length < 80 && images.length === 0) throw new Error(s.noteEmpty);
 		return {
-			content: [...images, { type: "text", text: `Source: note "${f.basename}"${images.length ? ` (with ${images.length} embedded images above)` : ""}.\n<<<\n${text}\n>>>` }],
+			content: [
+				...images.flatMap((i) => labeledImage(figures, i.path, i.content)),
+				{ type: "text", text: `Source: note "${f.basename}"${images.length ? ` (with ${images.length} embedded images above)` : ""}.\n<<<\n${text}\n>>>` },
+			],
 			pages: "",
+			figures,
 		};
 	}
 
@@ -129,16 +160,29 @@ export async function loadSource(app: App, f: TFile, pageInput: string): Promise
 			// Hardly any text: probably scanned -> send the PDF itself (the AI reads the pages as images)
 			if (p.buf.byteLength > MAX_PDF_BYTES) throw new Error(s.scanTooLarge);
 			return {
-				content: [pdfDocument(p.buf), { type: "text", text: `Source: PDF "${f.name}"${p.range ? `, only use pages ${p.range}` : ""}.` }],
+				content: [pdfDocument(p.buf), { type: "text", text: `Source: PDF "${f.name}"${p.range ? `, only use pages ${p.range}` : ""}.${pdfFigureLabel(figures, f.path, p.pages)}` }],
 				pages: p.range,
 				hint: p.range ? s.scanWithRange(p.range) : s.scan,
+				figures,
 			};
 		}
 		if (p.text.length > MAX_CHARS) throw new Error(s.pdfTooLong);
-		return { content: [{ type: "text", text: `Source: PDF "${f.name}"${p.range ? `, pages ${p.range}` : ""}.\n<<<\n${p.text}\n>>>` }], pages: p.range };
+		return { content: [{ type: "text", text: `Source: PDF "${f.name}"${p.range ? `, pages ${p.range}` : ""}.\n<<<\n${p.text}\n>>>` }], pages: p.range, figures };
 	}
 
 	throw new Error(s.unsupported);
+}
+
+/** Image of a figure for grading, or null if it cannot be attached (file gone, too large, PDF page). */
+export async function figureImage(app: App, fig: Figure): Promise<Content | null> {
+	if (fig.page) return null;
+	const f = app.vault.getAbstractFileByPath(fig.path);
+	if (!(f instanceof TFile) || sourceKind(f) !== "image") return null;
+	try {
+		return await imageContent(app, f);
+	} catch {
+		return null;
+	}
 }
 
 // ------------------------------------------------------------------ Folder
@@ -160,6 +204,8 @@ export async function loadFolderSource(app: App, o: TFolder, files: TFile[]): Pr
 	const s = t().sources;
 	if (!files.length) throw new Error(s.folderEmpty(o.name));
 	const images: Content[] = [];
+	const figures = new FigureList();
+	let imageCount = 0;
 	const texts: string[] = [];
 	let chars = 0;
 	let used = 0;
@@ -170,12 +216,13 @@ export async function loadFolderSource(app: App, o: TFolder, files: TFile[]): Pr
 		const head = `=== File: ${f.path} ===`;
 		try {
 			if (kind === "note") {
-				const n = await noteContent(app, f, Math.max(0, MAX_IMAGES - images.length));
+				const n = await noteContent(app, f, Math.max(0, MAX_IMAGES - imageCount));
 				if (chars + n.text.length > MAX_CHARS) {
 					skipped.push(f.name);
 					continue;
 				}
-				images.push(...n.images);
+				for (const i of n.images) images.push(...labeledImage(figures, i.path, i.content));
+				imageCount += n.images.length;
 				texts.push(`${head}\n${n.text}`);
 				chars += n.text.length;
 			} else if (kind === "pdf") {
@@ -187,7 +234,7 @@ export async function loadFolderSource(app: App, o: TFolder, files: TFile[]): Pr
 				texts.push(`${head}\n${p.text}`);
 				chars += p.text.length;
 			} else if (kind === "image") {
-				if (images.length >= MAX_IMAGES) {
+				if (imageCount >= MAX_IMAGES) {
 					skipped.push(f.name);
 					continue;
 				}
@@ -196,7 +243,8 @@ export async function loadFolderSource(app: App, o: TFolder, files: TFile[]): Pr
 					skipped.push(f.name);
 					continue;
 				}
-				images.push(b);
+				images.push(...labeledImage(figures, f.path, b));
+				imageCount++;
 				texts.push(`${head}\n(image, see above)`);
 			}
 			used++;
@@ -209,6 +257,7 @@ export async function loadFolderSource(app: App, o: TFolder, files: TFile[]): Pr
 		content: [...images, { type: "text", text: `Source: ${used} files from the folder "${o.name}".\n<<<\n${texts.join("\n\n")}\n>>>` }],
 		pages: "",
 		used,
+		figures,
 		hint: skipped.length ? s.skipped(skipped.length, skipped.slice(0, 5).join(", ") + (skipped.length > 5 ? " …" : "")) : undefined,
 	};
 }
