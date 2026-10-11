@@ -18,3 +18,13 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run smoke
+      - name: Collect plugin files
+        run: cp dist/main.js main.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lacuna-build
+          path: |
+            main.js
+            manifest.json
+            styles.css
+          retention-days: 14

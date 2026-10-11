@@ -5,6 +5,7 @@
 import { t } from "../i18n";
 import { dataBlock } from "./embed";
 import { costText } from "./cost";
+import { renderVisual } from "./visual";
 import { Answer, CONFIDENCE_LEVELS, Confidence, ErrorType, Evaluation, Question, QuizData, Result } from "./types";
 
 export const PLUGIN_KEY = "lacuna";
@@ -94,12 +95,14 @@ export function renderQuiz(q: QuizData, opt: RenderOptions = {}): string {
 	const questions = q.questions
 		.map((f) => {
 			const parts = [questionHeading(f), "", f.question.trim(), ""];
+			if (f.visual) parts.push(renderVisual(f.visual), "");
 			if (f.type === "mc") {
 				f.options.forEach((o, i) => parts.push(`- [ ] ${LETTERS[i]}) ${o.replace(/\n/g, " ")}`));
 				if (opt.confidence) parts.push("", ...confidenceLines());
 			} else {
+				if (f.answerTemplate) parts.push(`*${s.completeTable}*`, "");
 				if (opt.confidence) parts.push(...confidenceLines(), "");
-				parts.push(`**${s.answer}:**`, "", "");
+				parts.push(`**${s.answer}:**`, "", f.answerTemplate ? f.answerTemplate + "\n" : "");
 			}
 			return parts.join("\n");
 		})
@@ -238,6 +241,7 @@ export function renderEvaluated(q: QuizData, answers: Answer[], r: Result, readi
 			const points = e ? e.points : 0;
 			const max = e ? e.max : 0;
 			const parts = [`${questionHeading(f)} — ${fmtPoints(points)}/${max}`, "", f.question.trim(), ""];
+			if (f.visual) parts.push(renderVisual(f.visual), "");
 			if (f.type === "mc") {
 				f.options.forEach((o, i) => {
 					const x = a?.checked.includes(i) ? "x" : " ";

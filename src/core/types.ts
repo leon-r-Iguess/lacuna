@@ -12,6 +12,12 @@ export const CONFIDENCE_LEVELS: Confidence[] = ["guessed", "unsure", "sure"];
 
 export type QuestionType = "mc" | "open";
 
+/** A figure shown with the question: a Markdown table or Mermaid diagram code (without fences). */
+export interface Visual {
+	kind: "table" | "mermaid";
+	content: string;
+}
+
 /** Difficulty level chosen when creating a quiz. */
 export type Level = "intro" | "normal" | "exam";
 
@@ -36,6 +42,10 @@ export interface Question {
 	solution: string;
 	/** Where in the source this is covered, e.g. "page 17" */
 	reference: string;
+	/** Optional figure shown below the question text */
+	visual?: Visual;
+	/** Open only: Markdown table the learner completes below "Answer:" (given cells filled, the rest empty) */
+	answerTemplate?: string;
 }
 
 /** Everything stored (hidden) inside a quiz note. */

@@ -14,6 +14,7 @@ Lacuna is an [Obsidian](https://obsidian.md) plugin that turns your lecture note
 
 - **Quizzes from anything in your vault** – a note, a PDF (with page range), an image of a blackboard, or a whole folder. Multiple choice and open questions, three difficulty levels.
 - **Real grading, not just right/wrong** – open answers get partial points, every mistake gets an error type (knowledge gap, confusion, incomplete, application error, calculation error, imprecise), what was wrong, the correct reasoning, a reference to the source and a follow-up question.
+- **Figures in questions** – truth tables, state machines, flowcharts and protocol sequences appear as a table or Mermaid diagram right in the question, where a picture says more than prose. Some questions ask you to complete a table, e.g. the output column of a truth table.
 - **Follow-up round** – one click turns the follow-up questions into a new quiz, without another AI call.
 - **Past exams as style template** – questions in the style and at the level of an old exam, with content from your material.
 - **Exam readiness** – a live bar in the progress note:

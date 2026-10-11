@@ -3,6 +3,7 @@
 
 import { t } from "../i18n";
 import { legacyErrorType } from "./legacy";
+import { isUntouchedTemplate } from "./visual";
 import { Answer, ERROR_TYPES, ErrorType, Evaluation, POINTS_PER_DIFFICULTY, Question, Result, TopicScore } from "./types";
 
 export function maxPoints(q: Question): number {
@@ -15,7 +16,10 @@ export function mcCorrect(q: Question, a: Answer | undefined): boolean {
 
 export function isEmpty(q: Question, a: Answer | undefined): boolean {
 	if (!a) return true;
-	return q.type === "mc" ? a.checked.length === 0 : a.text.trim() === "";
+	if (q.type === "mc") return a.checked.length === 0;
+	if (a.text.trim() === "") return true;
+	// A table to complete that was left as it was counts as no answer
+	return !!q.answerTemplate && isUntouchedTemplate(a.text, q.answerTemplate);
 }
 
 /** Round to half points and clamp to [0, max]. */
