@@ -79,6 +79,38 @@ is recorded.
 The AI plays a fellow student who asks follow-up questions; the learner explains.
 - Fiorella & Mayer 2013/2014; Kobayashi 2019 (meta-analysis). Effects moderate. High fun, needs a dialog UI.
 
+### 18. Visuals in questions (circuits, truth tables, diagrams) — high priority for Leon
+Reading about a circuit or a truth table in prose is much harder than working with the picture or the
+table itself. Today questions are text only, and **the AI does not even see figures in text PDFs**:
+`src/sources.ts` (`pdfText`) sends only the extracted text; the PDF itself is sent only when it looks
+scanned. Images embedded in notes and image sources are already sent.
+
+- Multimedia principle: words plus relevant pictures beat words alone (Mayer, *Multimedia Learning*, 2009/2021).
+- Dual coding: Paivio 1986; Clark & Paivio 1991.
+- Working with and translating between representations (circuit ↔ truth table ↔ formula): Ainsworth 2006 (DeFT framework).
+- Generative work such as completing a table or drawing: Fiorella & Mayer 2016 (review of generative learning strategies).
+- Only figures that carry the content, never decorative ones: coherence principle (Mayer), seductive details (Rey 2012, meta-analysis).
+
+Staged plan (each stage useful on its own):
+
+1. **Tables and Mermaid in questions — S.** New optional schema field `visual` (Markdown table or Mermaid
+   code), rendered above the question text. Covers truth tables, state machines, flowcharts, protocol
+   sequences. New answer form "complete the table": inputs pre-filled, output column empty; the learner
+   fills it in, the AI grades it as an open answer.
+2. **Let the AI see figures in PDFs — M.** Send pages with figures as images, or the PDF itself (Claude
+   and Gemini read PDF pages visually), in addition to the text. Costs more tokens, so a setting
+   ("include figures") with the cost estimate. Prerequisite for stage 3 with PDFs.
+3. **Real figures from the material — S/M.** New schema field `figure`: which received image or PDF page the
+   question is about. Rendered as an embed (`![[Script.pdf#page=12]]`, `![[circuit.png]]`) above the
+   question, e.g. "What does this circuit output for A = 1, B = 0?". Like references (0.5.3, `src/core/reference.ts`),
+   only files Lacuna actually read are embedded, so no broken links.
+4. **Generated logic circuits — L.** The AI returns a structured netlist (gates, inputs, connections);
+   Lacuna draws the SVG and computes the truth table itself. Correct answers are computed, not trusted
+   from the AI. Question types: "complete the truth table", "which function does this circuit implement",
+   "find the fault". Pure logic in `src/core/`, fully unit-testable.
+
+Recommended start: 1 + 3 for notes and images (works today), then 2 for PDFs, 4 only if 1–3 are not enough.
+
 ## B. Motivation and fun (also supported)
 
 Basis: Self-Determination Theory (Ryan & Deci 2000): autonomy, competence, relatedness. Gamification
@@ -132,7 +164,7 @@ A card mode instead of the whole note, especially on mobile. No study behind it;
 ## Suggested order
 
 1. First open item 1 in `CLAUDE.md`: test in a real vault and fix what shows up there.
-2. Quick wins (small, no extra AI cost): 1, 2, 12, 13, 15.
+2. Quick wins (small, no extra AI cost): 1, 2, 12, 13, 15. Plus stage 1 of 18 (tables and Mermaid in questions).
 3. Core of 0.6: 3 + 4 + 11 together — all need stable question IDs across quizzes. 3 has the largest effect.
 4. Then the cheap prompt variants 5 and 6, later 8, 7, 9, 10.
 
