@@ -96,3 +96,4 @@ Commits use the GitHub noreply address `222822457+leon-r-Iguess@users.noreply.gi
    - A source inside the user's own folder named like the quiz folder creates quizzes in `Tests/Tests`.
 6. Planned for 0.6 (learning science): interleaved mixed quizzes across topics; successive relearning
    (repeat a topic until it is answered correctly several times in a row).
+   Full backlog of study-backed ideas with effort and suggested order: `docs/learning-science-ideas.md`.
