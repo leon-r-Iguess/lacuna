@@ -717,6 +717,8 @@ export default class LacunaPlugin extends Plugin {
 					correct: null,
 					solution: [e.correct, orig?.solution].filter(Boolean).join(" "),
 					reference: orig?.reference || e.reference || "",
+					// Keep the figure: the follow-up question usually refers to it
+					...(orig?.visual ? { visual: orig.visual } : {}),
 				});
 			}
 			if (!questions.length) {

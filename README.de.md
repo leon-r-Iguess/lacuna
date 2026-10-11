@@ -14,6 +14,7 @@ Lacuna ist ein Plugin für [Obsidian](https://obsidian.md). Es macht aus deinen 
 
 - **Tests aus allem in deinem Vault** – eine Notiz, eine PDF (mit Seitenbereich), ein Tafelbild oder ein ganzer Ordner. Multiple Choice und offene Fragen, drei Niveaus.
 - **Echte Bewertung statt nur richtig/falsch** – Teilpunkte bei offenen Fragen, zu jedem Fehler ein Fehlertyp (Wissenslücke, Verwechslung, unvollständig, Anwendungsfehler, Rechenfehler, ungenau), was falsch war, die richtige Herleitung, die Fundstelle und eine Nachfrage.
+- **Grafiken in Fragen** – Wahrheitstabellen, Zustandsautomaten, Abläufe und Protokoll-Sequenzen stehen als Tabelle oder Mermaid-Diagramm direkt in der Frage, wo ein Bild mehr sagt als Text. Manche Fragen lassen dich eine Tabelle vervollständigen, z. B. die Ausgabespalte einer Wahrheitstabelle.
 - **Nachfragen-Runde** – ein Klick macht aus den Nachfragen einen neuen Test, ohne weiteren KI-Aufruf.
 - **Altklausur als Stilvorlage** – Fragen im Stil und auf dem Niveau einer alten Klausur, Inhalt aus deinen Unterlagen.
 - **Klausurreife** – ein Live-Balken in der Lernstand-Notiz:

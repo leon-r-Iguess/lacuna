@@ -4,6 +4,7 @@
 import { t } from "../i18n";
 import { legacyDifficulty } from "./legacy";
 import { Answer, DIFFICULTIES, Difficulty, ERROR_TYPES, Level, Question, QuestionTypes } from "./types";
+import { cleanTable, cleanVisual, visualForAI } from "./visual";
 
 export interface CreateOptions {
 	count: number;
@@ -32,6 +33,8 @@ Rules for good questions:
 - Cover the central topics. No questions about organization, slide titles, literature, authors or page numbers.
 - Only content that appears in the source or follows directly from it.
 - "topic" is a short, reusable subtopic (2–4 words), e.g. "802.1Q tagging", not the whole question. Use the same topic for related questions.
+- Visuals: if a question is about a structure that is easier to see than to read – truth table, state machine, flowchart, protocol sequence, small data table – add it as "visual": visual_kind "table" (a Markdown table) or "mermaid" (Mermaid code without \`\`\` fences). Only when the figure carries the content of the question, never as decoration; at most about one third of the questions. Otherwise visual_kind "none" and visual "".
+- "answer_template": for open questions that ask the student to complete a table (e.g. the output column of a truth table), give that Markdown table with the given cells filled in and the cells to complete left empty; the solution then contains the completed table. Otherwise "". Neither visual nor template may give away the answer.
 - "reference": where in the source this is covered. The source contains markers like [Page 12]; then name the page ("p. 12–14"), otherwise the section. With several files (=== File: path ===), start with the full file path, e.g. "Folder/Script.pdf, p. 12–14". Do not copy the === or [Page] markers themselves.
 - ${LANGUAGE_RULE}`;
 
@@ -89,6 +92,9 @@ export const SCHEMA_CREATE = {
 						correct: { type: "integer", description: "mc: index 0-3 of the correct option. open: -1." },
 						solution: { type: "string", description: "Model answer or explanation of the correct option" },
 						reference: { type: "string" },
+						visual_kind: { type: "string", enum: ["none", "table", "mermaid"], description: "Figure shown with the question, or none" },
+						visual: { type: "string", description: "table: Markdown table. mermaid: Mermaid code without fences. none: empty." },
+						answer_template: { type: "string", description: "open only: Markdown table to complete (empty cells for the answer), otherwise empty" },
 					},
 					required: ["type", "difficulty", "topic", "question", "solution", "reference"],
 				},
@@ -142,6 +148,8 @@ export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mix
 		}
 		const d = String(f.difficulty ?? f.schwierigkeit ?? "").toLowerCase();
 		const difficulty: Difficulty = (DIFFICULTIES as string[]).includes(d) ? (d as Difficulty) : (legacyDifficulty(d) ?? "medium");
+		const visual = cleanVisual(f.visual_kind, f.visual);
+		const answerTemplate = type === "open" && typeof f.answer_template === "string" ? cleanTable(f.answer_template) : null;
 		questions.push({
 			nr: questions.length + 1,
 			type,
@@ -152,6 +160,8 @@ export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mix
 			correct,
 			solution,
 			reference: String(f.reference ?? f.fundstelle ?? "").trim(),
+			...(visual ? { visual } : {}),
+			...(answerTemplate ? { answerTemplate } : {}),
 		});
 	}
 	if (questions.length === 0) throw new Error(t().errors.noUsableQuestions);
@@ -169,6 +179,8 @@ Error types (exactly one per flawed answer):
 - application: concept known but applied wrongly to the situation.
 - calculation: approach correct, calculation wrong.
 - imprecise: correct in principle but vague or technically sloppy.
+
+If a question has a "visual" (table or diagram) or an "answer_template" (a table the student had to complete), grade against it. For a completed table, every wrong or missing cell counts: give points in proportion to the correct cells and name the wrong cells in "what_was_wrong".
 
 For every question:
 - points: 0 to max in steps of 0.5 (ignored for multiple choice, only the analysis counts there).
@@ -192,6 +204,8 @@ export interface AIEvaluationItem {
 	correct_option?: string;
 	model_answer: string;
 	reference: string;
+	visual?: string;
+	answer_template?: string;
 	student_answer: string;
 }
 
@@ -209,6 +223,8 @@ export function evaluationItems(questions: Question[], answers: Answer[], maxOf:
 			question: q.question,
 			model_answer: q.solution,
 			reference: q.reference,
+			...(q.visual ? { visual: visualForAI(q.visual) } : {}),
+			...(q.answerTemplate ? { answer_template: q.answerTemplate } : {}),
 			student_answer: "",
 		};
 		if (q.type === "mc") {

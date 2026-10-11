@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased (0.6.0)
+
+- Figures in questions: where a structure is easier to see than to read (truth table, state machine, flowchart, protocol sequence), the question shows it as a Markdown table or Mermaid diagram. Figures are checked before they go into the note; a broken one is dropped and the question stays.
+- New task form "complete the table": the table sits below **Answer:** with the given cells filled in. A table left untouched counts as not answered.
+- Grading sees the figure and the table, and follow-up questions keep the figure they refer to.
+- CI attaches the plugin files (`main.js`, `manifest.json`, `styles.css`) to every run as the artifact `lacuna-build`, for testing a pull request in a vault.
+
 ## 0.5.3
 
 - References are clickable: in the topic list and in evaluated quizzes they link to the source file, PDFs straight to the page (`[[Script.pdf#page=12|Script – p. 12–14]]`). Only files Lacuna actually read are linked; anything else stays text. Topic lists built with 0.5.2 showed raw markers like `=== File: … === [Page 4]` – delete the list and build it again to get links.
