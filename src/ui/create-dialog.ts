@@ -11,6 +11,8 @@ export interface CreateChoice {
 	level: Level;
 	/** Path of the past exam or "" */
 	styleTemplate: string;
+	/** Send PDF pages with figures as images */
+	figures: boolean;
 }
 
 export interface CreateDialogOptions {
@@ -19,6 +21,8 @@ export interface CreateDialogOptions {
 	pageCount: number | null;
 	choice: CreateChoice;
 	pastExams: TFile[];
+	/** Offer "include figures" (PDF source or folder) */
+	figuresOption: boolean;
 	go: (w: CreateChoice) => void;
 }
 
@@ -79,6 +83,13 @@ export class CreateDialog extends Modal {
 				d.setValue(w.styleTemplate).onChange((v) => (w.styleTemplate = v));
 				if (!candidates.length) d.setDisabled(true);
 			});
+
+		if (this.o.figuresOption) {
+			new Setting(contentEl)
+				.setName(s.figures)
+				.setDesc(s.figuresDesc)
+				.addToggle((x) => x.setValue(w.figures).onChange((v) => (w.figures = v)));
+		}
 
 		new Setting(contentEl)
 			.setName(s.focus)
