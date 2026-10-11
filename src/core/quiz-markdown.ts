@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { dataBlock } from "./embed";
 import { costText } from "./cost";
 import { renderVisual } from "./visual";
+import { figureEmbed } from "./figures";
 import { Answer, CONFIDENCE_LEVELS, Confidence, ErrorType, Evaluation, Question, QuizData, Result } from "./types";
 
 export const PLUGIN_KEY = "lacuna";
@@ -95,6 +96,7 @@ export function renderQuiz(q: QuizData, opt: RenderOptions = {}): string {
 	const questions = q.questions
 		.map((f) => {
 			const parts = [questionHeading(f), "", f.question.trim(), ""];
+			if (f.figure) parts.push(figureEmbed(f.figure), "");
 			if (f.visual) parts.push(renderVisual(f.visual), "");
 			if (f.type === "mc") {
 				f.options.forEach((o, i) => parts.push(`- [ ] ${LETTERS[i]}) ${o.replace(/\n/g, " ")}`));
@@ -241,6 +243,7 @@ export function renderEvaluated(q: QuizData, answers: Answer[], r: Result, readi
 			const points = e ? e.points : 0;
 			const max = e ? e.max : 0;
 			const parts = [`${questionHeading(f)} — ${fmtPoints(points)}/${max}`, "", f.question.trim(), ""];
+			if (f.figure) parts.push(figureEmbed(f.figure), "");
 			if (f.visual) parts.push(renderVisual(f.visual), "");
 			if (f.type === "mc") {
 				f.options.forEach((o, i) => {

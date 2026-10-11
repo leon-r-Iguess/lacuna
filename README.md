@@ -14,7 +14,7 @@ Lacuna is an [Obsidian](https://obsidian.md) plugin that turns your lecture note
 
 - **Quizzes from anything in your vault** – a note, a PDF (with page range), an image of a blackboard, or a whole folder. Multiple choice and open questions, three difficulty levels.
 - **Real grading, not just right/wrong** – open answers get partial points, every mistake gets an error type (knowledge gap, confusion, incomplete, application error, calculation error, imprecise), what was wrong, the correct reasoning, a reference to the source and a follow-up question.
-- **Figures in questions** – truth tables, state machines, flowcharts and protocol sequences appear as a table or Mermaid diagram right in the question, where a picture says more than prose. Some questions ask you to complete a table, e.g. the output column of a truth table.
+- **Figures in questions** – a question can show the figure from your material it is about (an image in your note, an image file, a page of a scanned PDF): "What does this circuit output for A = 1, B = 0?" with the circuit from your slide. Truth tables, state machines, flowcharts and protocol sequences can also appear as a table or Mermaid diagram, and some questions ask you to complete a table.
 - **Follow-up round** – one click turns the follow-up questions into a new quiz, without another AI call.
 - **Past exams as style template** – questions in the style and at the level of an old exam, with content from your material.
 - **Exam readiness** – a live bar in the progress note:
@@ -90,7 +90,7 @@ The self-rated confidence is deliberately **not** part of this: it is shown as c
 
 - **Network use:** Lacuna sends content to the AI provider you choose (Anthropic, Google or OpenAI), and only when you
   - create a quiz (the selected note, PDF pages, images or folder),
-  - evaluate a quiz (the questions, model answers and your answers),
+  - evaluate a quiz (the questions, model answers and your answers, plus the images of figures the questions show),
   - update the progress note manually (your past mistakes, to find error patterns),
   - build or extend a topic list (the material of the subject folder, after you confirm a cost estimate).
 

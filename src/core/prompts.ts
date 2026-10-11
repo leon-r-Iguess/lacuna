@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { legacyDifficulty } from "./legacy";
 import { Answer, DIFFICULTIES, Difficulty, ERROR_TYPES, Level, Question, QuestionTypes } from "./types";
 import { cleanTable, cleanVisual, visualForAI } from "./visual";
+import { FigureList, figureForAI } from "./figures";
 
 export interface CreateOptions {
 	count: number;
@@ -19,6 +20,8 @@ export interface CreateOptions {
 	fromFolder?: boolean;
 	/** Topic list of the subject: every question must use one of these names */
 	topics?: string[];
+	/** Figures from the material the AI was shown (labeled F1, F2, …) */
+	figures?: FigureList;
 }
 
 const LANGUAGE_RULE =
@@ -67,6 +70,12 @@ export function userPromptCreate(o: CreateOptions): string {
 		);
 	if (o.topics && o.topics.length)
 		parts.push(`The subject has a topic list. Set "topic" of every question to EXACTLY one of these names (verbatim, the best fit): ${o.topics.map((x) => `"${x}"`).join(", ")}.`);
+	if (o.figures && o.figures.items.length) {
+		parts.push(
+			`The material contains figures labeled [Figure F1 …]. If a question is about what one of them shows (e.g. a circuit, diagram, table or plot on a slide), set "figure" to its ID (${o.figures.ids.join(", ")}) – it is then shown with the question – and ask about it directly, e.g. "What does this circuit output for A = 1, B = 0?". Only figures that carry the content of the question; otherwise "figure" is "". Do not describe the figure in the question text in a way that gives the answer away.` +
+				(o.figures.needsPage ? ' For a figure that covers several pages, "figure_page" is the page the question is about; otherwise 0.' : ""),
+		);
+	}
 	if (o.focus.trim()) parts.push(`Focus: ${o.focus.trim()}`);
 	parts.push("Answer in the given JSON format.");
 	return parts.join("\n");
@@ -104,16 +113,31 @@ export const SCHEMA_CREATE = {
 	},
 };
 
-/** Schema for creating; with a topic list "topic" is restricted to its names. */
-export function schemaCreate(topics?: string[]): typeof SCHEMA_CREATE {
-	if (!topics || !topics.length) return SCHEMA_CREATE;
+/**
+ * Schema for creating; with a topic list "topic" is restricted to its names.
+ * With figures, "figure" is restricted to their IDs (or "" for none).
+ */
+export function schemaCreate(topics?: string[], figures?: FigureList): typeof SCHEMA_CREATE {
+	const withTopics = !!(topics && topics.length);
+	const withFigures = !!(figures && figures.items.length);
+	if (!withTopics && !withFigures) return SCHEMA_CREATE;
 	const s = JSON.parse(JSON.stringify(SCHEMA_CREATE));
-	s.input_schema.properties.questions.items.properties.topic = { type: "string", enum: [...new Set(topics)] };
+	const props = s.input_schema.properties.questions.items.properties;
+	if (withTopics) props.topic = { type: "string", enum: [...new Set(topics)] };
+	if (withFigures) {
+		props.figure = { type: "string", enum: ["", ...figures!.ids], description: "ID of the figure from the material the question is about, or empty" };
+		if (figures!.needsPage) props.figure_page = { type: "integer", description: "page of a multi-page figure the question is about, otherwise 0" };
+	}
 	return s;
 }
 
 /** Turn raw AI output into clean questions. Throws on unusable output. */
-export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mixed", fallbackTopic = "General"): { title: string; questions: Question[] } {
+export function normalizeQuestions(
+	raw: any,
+	questionTypes: QuestionTypes = "mixed",
+	fallbackTopic = "General",
+	figures?: FigureList,
+): { title: string; questions: Question[] } {
 	const list = raw?.questions ?? raw?.fragen;
 	if (!raw || !Array.isArray(list)) throw new Error(t().errors.noQuestions);
 	const questions: Question[] = [];
@@ -150,6 +174,7 @@ export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mix
 		const difficulty: Difficulty = (DIFFICULTIES as string[]).includes(d) ? (d as Difficulty) : (legacyDifficulty(d) ?? "medium");
 		const visual = cleanVisual(f.visual_kind, f.visual);
 		const answerTemplate = type === "open" && typeof f.answer_template === "string" ? cleanTable(f.answer_template) : null;
+		const figure = figures?.resolve(f.figure, f.figure_page);
 		questions.push({
 			nr: questions.length + 1,
 			type,
@@ -162,6 +187,7 @@ export function normalizeQuestions(raw: any, questionTypes: QuestionTypes = "mix
 			reference: String(f.reference ?? f.fundstelle ?? "").trim(),
 			...(visual ? { visual } : {}),
 			...(answerTemplate ? { answerTemplate } : {}),
+			...(figure ? { figure } : {}),
 		});
 	}
 	if (questions.length === 0) throw new Error(t().errors.noUsableQuestions);
@@ -180,7 +206,7 @@ Error types (exactly one per flawed answer):
 - calculation: approach correct, calculation wrong.
 - imprecise: correct in principle but vague or technically sloppy.
 
-If a question has a "visual" (table or diagram) or an "answer_template" (a table the student had to complete), grade against it. For a completed table, every wrong or missing cell counts: give points in proportion to the correct cells and name the wrong cells in "what_was_wrong".
+If a question has a "figure", "visual" (table or diagram) or an "answer_template" (a table the student had to complete), grade against it. For a completed table, every wrong or missing cell counts: give points in proportion to the correct cells and name the wrong cells in "what_was_wrong".
 
 For every question:
 - points: 0 to max in steps of 0.5 (ignored for multiple choice, only the analysis counts there).
@@ -206,10 +232,12 @@ export interface AIEvaluationItem {
 	reference: string;
 	visual?: string;
 	answer_template?: string;
+	figure?: string;
 	student_answer: string;
 }
 
-export function evaluationItems(questions: Question[], answers: Answer[], maxOf: (q: Question) => number): AIEvaluationItem[] {
+/** `attached`: numbers of the questions whose figure is attached to the grading request as an image. */
+export function evaluationItems(questions: Question[], answers: Answer[], maxOf: (q: Question) => number, attached: Set<number> = new Set()): AIEvaluationItem[] {
 	const a = new Map(answers.map((x) => [x.nr, x]));
 	const L = "ABCDEF";
 	return questions.map((q) => {
@@ -225,6 +253,7 @@ export function evaluationItems(questions: Question[], answers: Answer[], maxOf:
 			reference: q.reference,
 			...(q.visual ? { visual: visualForAI(q.visual) } : {}),
 			...(q.answerTemplate ? { answer_template: q.answerTemplate } : {}),
+			...(q.figure ? { figure: figureForAI(q.nr, attached.has(q.nr)) } : {}),
 			student_answer: "",
 		};
 		if (q.type === "mc") {

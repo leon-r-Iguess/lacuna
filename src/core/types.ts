@@ -18,6 +18,14 @@ export interface Visual {
 	content: string;
 }
 
+/** A figure from the learner's material shown with a question: an image file or a PDF page. */
+export interface Figure {
+	/** Vault path of the image or PDF */
+	path: string;
+	/** PDF page (1-based); absent for images */
+	page?: number;
+}
+
 /** Difficulty level chosen when creating a quiz. */
 export type Level = "intro" | "normal" | "exam";
 
@@ -46,6 +54,8 @@ export interface Question {
 	visual?: Visual;
 	/** Open only: Markdown table the learner completes below "Answer:" (given cells filled, the rest empty) */
 	answerTemplate?: string;
+	/** Figure from the material the question is about (embedded below the question text) */
+	figure?: Figure;
 }
 
 /** Everything stored (hidden) inside a quiz note. */

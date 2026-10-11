@@ -49,7 +49,9 @@ describe("full flow", () => {
 		expect(schema.properties.questions.items.required).toContain("correct");
 		expect(req.system).toContain("SAME language as the source material");
 		expect(req.messages[0].content[0].type).toBe("image"); // embedded image is sent
-		expect(req.messages[0].content[1].text).toContain("A VLAN separates");
+		expect(req.messages[0].content[1].text).toBe('[Figure F1: the image above, file "Uni/Networks/images/board.png"]'); // figure label
+		expect(req.messages[0].content[2].text).toContain("A VLAN separates");
+		expect(schema.properties.questions.items.properties.figure.enum).toEqual(["", "F1"]);
 
 		const quizPath = quizPaths()[0];
 		expect(quizPath).toMatch(/VLANs and trunking – Quiz /);
